@@ -1,231 +1,300 @@
+"""
+tests.py
+--------
+Unit and integration tests for the FP&A AI Agent.
+Run with: python3 tests.py
+
+Tests cover:
+  - Data loading and schema validation
+  - Variance calculations (math correctness)
+  - Budget-only row coverage (no silent data loss)
+  - Anomaly summary contract (keys and types)
+  - Department summary structure
+  - Rolling trends structure
+  - Report generation (no API calls required)
+  - Data integrity checks
+  - Input validation (malformed CSV)
+  - Empty data handling
+  - Risk flags return list of strings
+"""
+
 import os
 import sys
+import pandas as pd
+import numpy as np
+import tempfile
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(BASE_DIR, "src"))
 
-import streamlit as st
-import pandas as pd
-import plotly.graph_objects as go
-from dotenv import load_dotenv
-
-from sql_engine import load_csv_to_db, get_variance_analysis, get_department_summary, get_rolling_trends, validate_schema
+from sql_engine import (
+    load_csv_to_db, get_variance_analysis, get_department_summary,
+    get_rolling_trends, validate_schema,
+)
 from anomaly_detector import detect_anomalies, get_anomaly_summary
-from commentary_agent import generate_commentary, generate_risk_flags
+from commentary_agent import generate_risk_flags
 from report_generator import generate_excel_report
 
-load_dotenv()
+PASS = "✅"
+FAIL = "❌"
+results = []
 
-st.set_page_config(page_title="FP&A AI Agent", page_icon="📊", layout="wide")
 
-st.markdown("""
-<style>
-[data-testid="stSidebar"] {
-    background-color: #0d1117;
-    border-right: 1px solid #1f2937;
-}
-[data-testid="metric-container"] {
-    background-color: #111827;
-    border: 1px solid #1f2937;
-    border-radius: 12px;
-    padding: 16px;
-}
-[data-testid="metric-container"] [data-testid="stMetricValue"] {
-    color: #f59e0b;
-    font-size: 1.8rem;
-    font-weight: 700;
-}
-[data-testid="metric-container"] label { color: #9ca3af; }
-div[data-testid="stDataFrame"] {
-    border: 1px solid #1f2937;
-    border-radius: 12px;
-}
-.stDownloadButton > button {
-    background-color: #f59e0b !important;
-    color: #000 !important;
-    font-weight: 600 !important;
-    border-radius: 10px !important;
-    border: none !important;
-}
-.stButton > button[kind="primary"] {
-    background-color: #f59e0b !important;
-    color: #000 !important;
-    font-weight: 600 !important;
-    border-radius: 10px !important;
-    border: none !important;
-}
-h1, h2, h3 { color: #f1f5f9 !important; }
-.stAlert { border-radius: 10px !important; }
-</style>
-""", unsafe_allow_html=True)
-
-st.title("📊 FP&A AI Analyst Agent")
-st.caption("Automated Variance Analysis & Management Commentary Generator")
-
-# ── SIDEBAR ────────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.header("📁 Data Input")
-    use_sample = st.button("Load Sample Data", use_container_width=True)
-    st.divider()
-    actual_file = st.file_uploader("Upload Actuals CSV", type=["csv"])
-    budget_file = st.file_uploader("Upload Budget CSV", type=["csv"])
-    run_btn = st.button("▶ Run Analysis", type="primary", use_container_width=True)
-
-SAMPLE_ACTUAL = os.path.join(BASE_DIR, "sample_data", "actual.csv")
-SAMPLE_BUDGET = os.path.join(BASE_DIR, "sample_data", "budget.csv")
-
-if use_sample:
-    st.session_state["actual_df"] = pd.read_csv(SAMPLE_ACTUAL)
-    st.session_state["budget_df"] = pd.read_csv(SAMPLE_BUDGET)
-    st.sidebar.success("Sample data loaded!")
-
-if actual_file and budget_file:
-    actual_df = pd.read_csv(actual_file)
-    budget_df = pd.read_csv(budget_file)
-
-    # ── Input validation ───────────────────────────────────────────────────────
+def run_test(name, fn):
     try:
-        validate_schema(actual_df, "Actuals")
-        validate_schema(budget_df, "Budget")
-        st.session_state["actual_df"] = actual_df
-        st.session_state["budget_df"] = budget_df
-        st.sidebar.success("Files validated and loaded!")
+        fn()
+        print(f"{PASS} {name}")
+        results.append((name, True, None))
+    except Exception as e:
+        print(f"{FAIL} {name} — {e}")
+        results.append((name, False, str(e)))
+
+
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
+def load_sample():
+    actual_df = pd.read_csv(os.path.join(BASE_DIR, "sample_data", "actual.csv"))
+    budget_df = pd.read_csv(os.path.join(BASE_DIR, "sample_data", "budget.csv"))
+    load_csv_to_db(actual_df, budget_df)
+    return actual_df, budget_df
+
+
+# ─── TEST 1: Schema validation — good data ────────────────────────────────────
+
+def test_schema_validation_pass():
+    df = pd.DataFrame({
+        "department": ["Sales"], "line_item": ["Revenue"],
+        "period": ["2023-01"], "amount": [100000],
+    })
+    validate_schema(df, "Test")   # should not raise
+
+
+# ─── TEST 2: Schema validation — bad data ─────────────────────────────────────
+
+def test_schema_validation_fail():
+    bad = pd.DataFrame({"col_a": [1], "col_b": [2]})
+    try:
+        validate_schema(bad, "Test")
+        raise AssertionError("Should have raised ValueError")
     except ValueError as e:
-        st.sidebar.error(f"❌ Invalid file: {e}")
+        assert "Missing required columns" in str(e)
 
-if run_btn:
-    if "actual_df" not in st.session_state:
-        st.warning("Please upload data or load sample data first.")
-        st.stop()
 
-    actual_df = st.session_state["actual_df"]
-    budget_df = st.session_state["budget_df"]
+# ─── TEST 3: Data loading ─────────────────────────────────────────────────────
 
-    with st.spinner("Running analysis..."):
-        try:
-            load_csv_to_db(actual_df, budget_df)
-        except ValueError as e:
-            st.error(f"❌ Data loading failed: {e}")
-            st.stop()
+def test_data_loading():
+    actual_df, budget_df = load_sample()
+    assert len(actual_df) > 0
+    assert len(budget_df) > 0
 
-        variance_df    = get_variance_analysis()
-        dept_df        = get_department_summary()
-        trends_df      = get_rolling_trends()
-        variance_df    = detect_anomalies(variance_df)
-        anomaly_summary = get_anomaly_summary(variance_df)
-        risk_flags     = generate_risk_flags(variance_df)
 
-    st.divider()
+# ─── TEST 4: Variance analysis structure ──────────────────────────────────────
 
-    # ── KPI CARDS ──────────────────────────────────────────────────────────────
-    total_actual  = variance_df["actual_amount"].sum()
-    total_budget  = variance_df["budget_amount"].sum()
-    total_var     = total_actual - total_budget
-    total_var_pct = (total_var / total_budget * 100) if total_budget != 0 else 0
+def test_variance_analysis_structure():
+    load_sample()
+    df = get_variance_analysis()
+    assert len(df) > 0
+    required = {"department", "line_item", "period",
+                "actual_amount", "budget_amount", "variance_dollar", "variance_pct"}
+    assert not required - set(df.columns), f"Missing: {required - set(df.columns)}"
 
-    k1, k2, k3, k4 = st.columns(4)
-    k1.metric("Total Actual",       f"${total_actual:,.0f}")
-    k2.metric("Total Budget",       f"${total_budget:,.0f}")
-    k3.metric("Net Variance $",     f"${total_var:,.0f}", delta=f"{total_var_pct:+.2f}%")
-    k4.metric("Anomalies Detected", anomaly_summary["total_anomalies"])
 
-    st.divider()
+# ─── TEST 5: Variance math correctness ────────────────────────────────────────
 
-    # ── DEPARTMENT SUMMARY + RISK FLAGS ────────────────────────────────────────
-    col_left, col_right = st.columns(2)
+def test_variance_math():
+    load_sample()
+    df = get_variance_analysis()
+    computed = (df["actual_amount"] - df["budget_amount"]).round(2)
+    max_error = (computed - df["variance_dollar"].round(2)).abs().max()
+    assert max_error < 0.01, f"Variance dollar error: {max_error}"
 
-    with col_left:
-        st.subheader("🏢 Department Summary")
-        dept_display = dept_df.copy()
-        dept_display.columns = ["Department", "Actual", "Budget", "Variance $", "Variance %"]
-        st.dataframe(dept_display, use_container_width=True, hide_index=True)
 
-    with col_right:
-        st.subheader("⚠️ Risk Flags")
-        if risk_flags:
-            for flag in risk_flags:
-                st.warning(flag)
-        else:
-            st.success("No items exceed 10% variance threshold.")
+# ─── TEST 6: Budget-only rows are not lost ────────────────────────────────────
 
-    st.divider()
+def test_budget_only_rows_preserved():
+    """
+    Inject a budget row with no matching actual.
+    The variance query must return it with actual_amount = 0.
+    """
+    actual_df = pd.read_csv(os.path.join(BASE_DIR, "sample_data", "actual.csv"))
+    budget_df = pd.read_csv(os.path.join(BASE_DIR, "sample_data", "budget.csv"))
 
-    # ── WATERFALL CHART ────────────────────────────────────────────────────────
-    st.subheader("📉 Variance Waterfall — Top 10 Line Items")
-    top10  = variance_df.head(10).copy()
-    colors = ["red" if v < 0 else "green" for v in top10["variance_dollar"]]
+    extra_budget = pd.DataFrame([{
+        "department": "TestDept",
+        "line_item":  "BudgetOnlyLine",
+        "period":     "2099-01",
+        "amount":     99999,
+    }])
+    budget_df = pd.concat([budget_df, extra_budget], ignore_index=True)
+    load_csv_to_db(actual_df, budget_df)
 
-    fig_waterfall = go.Figure(go.Bar(
-        x=top10["line_item"] + " (" + top10["period"] + ")",
-        y=top10["variance_dollar"],
-        marker_color=colors,
-        text=[f"${v:,.0f}" for v in top10["variance_dollar"]],
-        textposition="outside",
-    ))
-    fig_waterfall.update_layout(
-        xaxis_title="Line Item", yaxis_title="Variance ($)",
-        height=400, xaxis_tickangle=-45,
-        paper_bgcolor="#0a0e1a", plot_bgcolor="#0a0e1a", font_color="#f1f5f9",
-    )
-    st.plotly_chart(fig_waterfall, use_container_width=True)
+    df = get_variance_analysis()
+    row = df[(df["department"] == "TestDept") & (df["line_item"] == "BudgetOnlyLine")]
+    assert len(row) == 1, "Budget-only row was lost in variance analysis"
+    assert float(row.iloc[0]["actual_amount"]) == 0.0, "actual_amount should be 0 for budget-only row"
+    assert float(row.iloc[0]["budget_amount"]) == 99999.0
 
-    st.divider()
 
-    # ── TREND CHART ────────────────────────────────────────────────────────────
-    st.subheader("📈 Rolling 3-Month Trend by Department")
-    if not trends_df.empty:
-        fig_trend = go.Figure()
-        for dept in trends_df["department"].unique():
-            d = trends_df[trends_df["department"] == dept]
-            fig_trend.add_trace(go.Scatter(
-                x=d["period"], y=d["rolling_3m_avg"],
-                mode="lines+markers", name=dept,
-            ))
-        fig_trend.update_layout(
-            xaxis_title="Period", yaxis_title="Rolling 3M Avg ($)",
-            height=400, legend_title="Department",
-            paper_bgcolor="#0a0e1a", plot_bgcolor="#0a0e1a", font_color="#f1f5f9",
-        )
-        st.plotly_chart(fig_trend, use_container_width=True)
+# ─── TEST 7: Department summary ───────────────────────────────────────────────
 
-    st.divider()
+def test_department_summary():
+    load_sample()
+    df = get_department_summary()
+    assert len(df) > 0
+    assert len(df) == 6, f"Expected 6 departments, got {len(df)}"
 
-    # ── ANOMALIES ──────────────────────────────────────────────────────────────
-    st.subheader("🔍 AI-Detected Anomalies")
-    anomaly_df = variance_df[variance_df["is_anomaly"] == True].copy()
-    if not anomaly_df.empty:
-        st.dataframe(
-            anomaly_df[[
-                "department", "line_item", "period",
-                "actual_amount", "budget_amount",
-                "variance_dollar", "variance_pct",
-            ]],
-            use_container_width=True,
-            hide_index=True,
-        )
+
+# ─── TEST 8: Rolling trends ───────────────────────────────────────────────────
+
+def test_rolling_trends():
+    load_sample()
+    df = get_rolling_trends()
+    assert len(df) > 0
+    assert "rolling_3m_avg" in df.columns
+    assert "period" in df.columns
+
+
+# ─── TEST 9: Anomaly detection ────────────────────────────────────────────────
+
+def test_anomaly_detection():
+    load_sample()
+    df = detect_anomalies(get_variance_analysis())
+    assert "is_anomaly" in df.columns
+    assert df["is_anomaly"].dtype == bool
+    assert df["is_anomaly"].sum() > 0, "Expected at least 1 anomaly"
+
+
+# ─── TEST 10: Anomaly summary contract ────────────────────────────────────────
+
+def test_anomaly_summary_contract():
+    """Verify exact keys and types used by app.py and commentary_agent.py."""
+    load_sample()
+    df = detect_anomalies(get_variance_analysis())
+    s  = get_anomaly_summary(df)
+
+    # Keys used by app.py
+    assert "total_anomalies" in s,      "app.py needs 'total_anomalies'"
+    # Keys used by commentary_agent.py
+    assert "departments_affected" in s, "commentary_agent.py needs 'departments_affected'"
+
+    assert isinstance(s["total_anomalies"],      int),   "total_anomalies must be int"
+    assert isinstance(s["departments_affected"], list),  "departments_affected must be list"
+    assert isinstance(s["anomaly_rate"],         float), "anomaly_rate must be float"
+    assert isinstance(s["top_anomalies"],        list),  "top_anomalies must be list"
+
+    for item in s["top_anomalies"]:
+        assert "department"      in item
+        assert "line_item"       in item
+        assert "variance_dollar" in item
+
+
+# ─── TEST 11: Risk flags return list of strings ───────────────────────────────
+
+def test_risk_flags_are_strings():
+    """generate_risk_flags must return a list of strings, never dicts."""
+    load_sample()
+    df    = get_variance_analysis()
+    flags = generate_risk_flags(df)
+    assert isinstance(flags, list), "generate_risk_flags must return list"
+    assert len(flags) > 0,          "Expected at least one risk flag"
+    for flag in flags:
+        assert isinstance(flag, str), \
+            f"Each risk flag must be a string, got {type(flag)}: {flag}"
+
+
+# ─── TEST 12: Report generation (no API) ─────────────────────────────────────
+
+def test_report_generation():
+    load_sample()
+    variance_df = detect_anomalies(get_variance_analysis())
+    dept_df     = get_department_summary()
+    commentary  = "Test commentary — no API call required."
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = os.path.join(tmpdir, "test_report.xlsx")
+        generate_excel_report(variance_df, dept_df, commentary, path)
+        assert os.path.exists(path),         "Excel file not created"
+        assert os.path.getsize(path) > 1000, "Excel file suspiciously small"
+
+
+# ─── TEST 13: Empty anomaly summary safe defaults ────────────────────────────
+
+def test_empty_anomaly_summary():
+    df = pd.DataFrame({"department": ["Sales"], "variance_dollar": [1000]})
+    s  = get_anomaly_summary(df)
+    assert s["total_anomalies"]      == 0
+    assert s["departments_affected"] == []
+    assert s["top_anomalies"]        == []
+
+
+# ─── TEST 14: Data integrity ─────────────────────────────────────────────────
+
+def test_data_integrity():
+    load_sample()
+    df = get_variance_analysis()
+    assert (df["actual_amount"] < 0).sum() == 0, "Negative actual amounts found"
+    assert df["period"].nunique()     == 12, f"Expected 12 periods"
+    assert df["department"].nunique() == 6,  f"Expected 6 departments"
+
+
+# ─── TEST 15: Budget-only department preserved in department summary ──────────
+
+def test_budget_only_dept_in_summary():
+    """
+    Inject a budget row for a department that has no actuals.
+    get_department_summary() must return it with total_actual = 0.
+    """
+    actual_df = pd.read_csv(os.path.join(BASE_DIR, "sample_data", "actual.csv"))
+    budget_df = pd.read_csv(os.path.join(BASE_DIR, "sample_data", "budget.csv"))
+
+    extra_budget = pd.DataFrame([{
+        "department": "GhostDept",
+        "line_item":  "PlannedExpense",
+        "period":     "2099-01",
+        "amount":     50000,
+    }])
+    budget_df = pd.concat([budget_df, extra_budget], ignore_index=True)
+    load_csv_to_db(actual_df, budget_df)
+
+    df = get_department_summary()
+    row = df[df["department"] == "GhostDept"]
+    assert len(row) == 1,                              "Budget-only department was lost in department summary"
+    assert float(row.iloc[0]["total_actual"]) == 0.0,  "total_actual should be 0 for budget-only department"
+    assert float(row.iloc[0]["total_budget"]) == 50000.0
+
+
+# ─── Runner ───────────────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    print("=" * 55)
+    print("FP&A AI Agent — Test Suite")
+    print("=" * 55)
+
+    run_test("1.  Schema validation — good data",        test_schema_validation_pass)
+    run_test("2.  Schema validation — bad data",         test_schema_validation_fail)
+    run_test("3.  Data loading",                         test_data_loading)
+    run_test("4.  Variance analysis structure",          test_variance_analysis_structure)
+    run_test("5.  Variance math correctness",            test_variance_math)
+    run_test("6.  Budget-only rows preserved",           test_budget_only_rows_preserved)
+    run_test("7.  Department summary structure",         test_department_summary)
+    run_test("8.  Rolling trends structure",             test_rolling_trends)
+    run_test("9.  Anomaly detection output",             test_anomaly_detection)
+    run_test("10. Anomaly summary contract",             test_anomaly_summary_contract)
+    run_test("11. Risk flags are strings",               test_risk_flags_are_strings)
+    run_test("12. Report generation (no API)",           test_report_generation)
+    run_test("13. Empty anomaly summary safe defaults",  test_empty_anomaly_summary)
+    run_test("14. Data integrity",                       test_data_integrity)
+    run_test("15. Budget-only dept preserved in summary", test_budget_only_dept_in_summary)
+
+    print("=" * 55)
+    passed = sum(1 for _, ok, _ in results if ok)
+    failed = sum(1 for _, ok, _ in results if not ok)
+    print(f"Results: {passed} passed, {failed} failed out of {len(results)} tests")
+    if failed == 0:
+        print("ALL TESTS PASSED ✅")
     else:
-        st.success("No anomalies detected.")
-
-    st.divider()
-
-    # ── AI COMMENTARY ──────────────────────────────────────────────────────────
-    st.subheader("🤖 AI-Generated Management Commentary")
-    with st.spinner("Generating commentary..."):
-        commentary = generate_commentary(variance_df, anomaly_summary, dept_df)
-    st.text_area("Management Commentary", value=commentary, height=300)
-
-    st.divider()
-
-    # ── EXCEL EXPORT ───────────────────────────────────────────────────────────
-    st.subheader("📥 Export Report")
-    excel_path = os.path.join(BASE_DIR, "outputs", "variance_report.xlsx")
-    os.makedirs(os.path.join(BASE_DIR, "outputs"), exist_ok=True)
-    generate_excel_report(variance_df, dept_df, commentary, excel_path)
-
-    with open(excel_path, "rb") as f:
-        st.download_button(
-            label="⬇️ Download Excel Report",
-            data=f,
-            file_name="variance_report.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
+        print("SOME TESTS FAILED ❌")
+        for name, ok, err in results:
+            if not ok:
+                print(f"  — {name}: {err}")
+    print("=" * 55)

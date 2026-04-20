@@ -236,7 +236,26 @@ def test_data_integrity():
     assert df["period"].nunique()     == 12, f"Expected 12 periods"
     assert df["department"].nunique() == 6,  f"Expected 6 departments"
 
+# ─── TEST 15: Budget-only department preserved in department summary ──────────
 
+def test_budget_only_dept_in_summary():
+    actual_df = pd.read_csv(os.path.join(BASE_DIR, "sample_data", "actual.csv"))
+    budget_df = pd.read_csv(os.path.join(BASE_DIR, "sample_data", "budget.csv"))
+
+    extra_budget = pd.DataFrame([{
+        "department": "GhostDept",
+        "line_item":  "PlannedExpense",
+        "period":     "2099-01",
+        "amount":     50000,
+    }])
+    budget_df = pd.concat([budget_df, extra_budget], ignore_index=True)
+    load_csv_to_db(actual_df, budget_df)
+
+    df = get_department_summary()
+    row = df[df["department"] == "GhostDept"]
+    assert len(row) == 1, "Budget-only department was lost in department summary"
+    assert float(row.iloc[0]["total_actual"]) == 0.0, "total_actual should be 0 for budget-only department"
+    assert float(row.iloc[0]["total_budget"]) == 50000.0
 # ─── Runner ───────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -258,7 +277,8 @@ if __name__ == "__main__":
     run_test("12. Report generation (no API)",           test_report_generation)
     run_test("13. Empty anomaly summary safe defaults",  test_empty_anomaly_summary)
     run_test("14. Data integrity",                       test_data_integrity)
-
+    run_test("15. Budget-only dept preserved in summary", test_budget_only_dept_in_summary)
+    
     print("=" * 55)
     passed = sum(1 for _, ok, _ in results if ok)
     failed = sum(1 for _, ok, _ in results if not ok)
