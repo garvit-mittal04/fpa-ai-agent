@@ -17,6 +17,48 @@ from report_generator import generate_excel_report
 load_dotenv()
 
 st.set_page_config(page_title="FP&A AI Agent", page_icon="📊", layout="wide")
+st.markdown("""
+<style>
+[data-testid="stSidebar"] {
+    background-color: #0d1117;
+    border-right: 1px solid #1f2937;
+}
+[data-testid="metric-container"] {
+    background-color: #111827;
+    border: 1px solid #1f2937;
+    border-radius: 12px;
+    padding: 16px;
+}
+[data-testid="metric-container"] [data-testid="stMetricValue"] {
+    color: #f59e0b;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+[data-testid="metric-container"] label {
+    color: #9ca3af;
+}
+div[data-testid="stDataFrame"] {
+    border: 1px solid #1f2937;
+    border-radius: 12px;
+}
+.stDownloadButton > button {
+    background-color: #f59e0b !important;
+    color: #000 !important;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+    border: none !important;
+}
+.stButton > button[kind="primary"] {
+    background-color: #f59e0b !important;
+    color: #000 !important;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+    border: none !important;
+}
+h1, h2, h3 { color: #f1f5f9 !important; }
+.stAlert { border-radius: 10px !important; }
+</style>
+""", unsafe_allow_html=True)
 st.title("📊 FP&A AI Analyst Agent")
 st.caption("Automated Variance Analysis & Management Commentary Generator")
 
