@@ -17,10 +17,54 @@ from report_generator import generate_excel_report
 load_dotenv()
 
 st.set_page_config(page_title="FP&A AI Agent", page_icon="📊", layout="wide")
+
+st.markdown("""
+<style>
+[data-testid="stSidebar"] {
+    background-color: #0d1117;
+    border-right: 1px solid #1f2937;
+}
+[data-testid="metric-container"] {
+    background-color: #111827;
+    border: 1px solid #1f2937;
+    border-radius: 12px;
+    padding: 16px;
+}
+[data-testid="metric-container"] [data-testid="stMetricValue"] {
+    color: #f59e0b;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+[data-testid="metric-container"] label {
+    color: #9ca3af;
+}
+div[data-testid="stDataFrame"] {
+    border: 1px solid #1f2937;
+    border-radius: 12px;
+}
+.stDownloadButton > button {
+    background-color: #f59e0b !important;
+    color: #000 !important;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+    border: none !important;
+}
+.stButton > button[kind="primary"] {
+    background-color: #f59e0b !important;
+    color: #000 !important;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+    border: none !important;
+}
+h1, h2, h3 { color: #f1f5f9 !important; }
+.stAlert { border-radius: 10px !important; }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("📊 FP&A AI Analyst Agent")
 st.caption("Automated Variance Analysis & Management Commentary Generator")
 
-# ── SIDEBAR ────────────────────────────────────────────────────────────────
+# ── SIDEBAR ────────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.header("📁 Data Input")
     use_sample = st.button("Load Sample Data", use_container_width=True)
@@ -33,10 +77,8 @@ SAMPLE_ACTUAL = os.path.join(BASE_DIR, "sample_data", "actual.csv")
 SAMPLE_BUDGET = os.path.join(BASE_DIR, "sample_data", "budget.csv")
 
 if use_sample:
-    actual_df = pd.read_csv(SAMPLE_ACTUAL)
-    budget_df = pd.read_csv(SAMPLE_BUDGET)
-    st.session_state["actual_df"] = actual_df
-    st.session_state["budget_df"] = budget_df
+    st.session_state["actual_df"] = pd.read_csv(SAMPLE_ACTUAL)
+    st.session_state["budget_df"] = pd.read_csv(SAMPLE_BUDGET)
     st.sidebar.success("Sample data loaded!")
 
 if actual_file and budget_file:
@@ -62,7 +104,7 @@ if run_btn:
 
     st.divider()
 
-    # ── KPI CARDS ──────────────────────────────────────────────────────────
+    # ── KPI CARDS ──────────────────────────────────────────────────────────────
     total_actual = variance_df["actual_amount"].sum()
     total_budget = variance_df["budget_amount"].sum()
     total_var = total_actual - total_budget
@@ -76,7 +118,7 @@ if run_btn:
 
     st.divider()
 
-    # ── DEPARTMENT SUMMARY + RISK FLAGS ────────────────────────────────────
+    # ── DEPARTMENT SUMMARY + RISK FLAGS ────────────────────────────────────────
     col_left, col_right = st.columns(2)
 
     with col_left:
@@ -95,7 +137,7 @@ if run_btn:
 
     st.divider()
 
-    # ── WATERFALL CHART ────────────────────────────────────────────────────
+    # ── WATERFALL CHART ────────────────────────────────────────────────────────
     st.subheader("📉 Variance Waterfall — Top 10 Line Items")
     top10 = variance_df.head(10).copy()
     colors = ["red" if v < 0 else "green" for v in top10["variance_dollar"]]
@@ -111,13 +153,16 @@ if run_btn:
         xaxis_title="Line Item",
         yaxis_title="Variance ($)",
         height=400,
-        xaxis_tickangle=-45
+        xaxis_tickangle=-45,
+        paper_bgcolor="#0a0e1a",
+        plot_bgcolor="#0a0e1a",
+        font_color="#f1f5f9"
     )
     st.plotly_chart(fig_waterfall, use_container_width=True)
 
     st.divider()
 
-    # ── TREND CHART ────────────────────────────────────────────────────────
+    # ── TREND CHART ────────────────────────────────────────────────────────────
     st.subheader("📈 Rolling 3-Month Trend by Department")
     if not trends_df.empty:
         fig_trend = go.Figure()
@@ -133,18 +178,22 @@ if run_btn:
             xaxis_title="Period",
             yaxis_title="Rolling 3M Avg ($)",
             height=400,
-            legend_title="Department"
+            legend_title="Department",
+            paper_bgcolor="#0a0e1a",
+            plot_bgcolor="#0a0e1a",
+            font_color="#f1f5f9"
         )
         st.plotly_chart(fig_trend, use_container_width=True)
 
     st.divider()
 
-    # ── ANOMALIES ──────────────────────────────────────────────────────────
+    # ── ANOMALIES ──────────────────────────────────────────────────────────────
     st.subheader("🔍 AI-Detected Anomalies")
     anomaly_df = variance_df[variance_df["is_anomaly"] == True].copy()
     if not anomaly_df.empty:
         st.dataframe(
-            anomaly_df[["department", "line_item", "period", "actual_amount", "budget_amount", "variance_dollar", "variance_pct"]],
+            anomaly_df[["department", "line_item", "period", "actual_amount",
+                         "budget_amount", "variance_dollar", "variance_pct"]],
             use_container_width=True,
             hide_index=True
         )
@@ -153,7 +202,7 @@ if run_btn:
 
     st.divider()
 
-    # ── AI COMMENTARY ──────────────────────────────────────────────────────
+    # ── AI COMMENTARY ──────────────────────────────────────────────────────────
     st.subheader("🤖 AI-Generated Management Commentary")
     with st.spinner("Generating commentary..."):
         commentary = generate_commentary(variance_df, anomaly_summary, dept_df)
@@ -161,7 +210,7 @@ if run_btn:
 
     st.divider()
 
-    # ── EXCEL EXPORT ───────────────────────────────────────────────────────
+    # ── EXCEL EXPORT ───────────────────────────────────────────────────────────
     st.subheader("📥 Export Report")
     excel_path = os.path.join(BASE_DIR, "outputs", "variance_report.xlsx")
     os.makedirs(os.path.join(BASE_DIR, "outputs"), exist_ok=True)
