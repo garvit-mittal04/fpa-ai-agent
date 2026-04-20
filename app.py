@@ -2,14 +2,14 @@ import os
 import sys
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(BASE_DIR, 'src'))
+sys.path.insert(0, os.path.join(BASE_DIR, "src"))
 
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from dotenv import load_dotenv
 
-from sql_engine import load_csv_to_db, get_variance_analysis, get_department_summary, get_rolling_trends
+from sql_engine import load_csv_to_db, get_variance_analysis, get_department_summary, get_rolling_trends, validate_schema
 from anomaly_detector import detect_anomalies, get_anomaly_summary
 from commentary_agent import generate_commentary, generate_risk_flags
 from report_generator import generate_excel_report
@@ -35,9 +35,7 @@ st.markdown("""
     font-size: 1.8rem;
     font-weight: 700;
 }
-[data-testid="metric-container"] label {
-    color: #9ca3af;
-}
+[data-testid="metric-container"] label { color: #9ca3af; }
 div[data-testid="stDataFrame"] {
     border: 1px solid #1f2937;
     border-radius: 12px;
@@ -82,8 +80,18 @@ if use_sample:
     st.sidebar.success("Sample data loaded!")
 
 if actual_file and budget_file:
-    st.session_state["actual_df"] = pd.read_csv(actual_file)
-    st.session_state["budget_df"] = pd.read_csv(budget_file)
+    actual_df = pd.read_csv(actual_file)
+    budget_df = pd.read_csv(budget_file)
+
+    # ── Input validation ───────────────────────────────────────────────────────
+    try:
+        validate_schema(actual_df, "Actuals")
+        validate_schema(budget_df, "Budget")
+        st.session_state["actual_df"] = actual_df
+        st.session_state["budget_df"] = budget_df
+        st.sidebar.success("Files validated and loaded!")
+    except ValueError as e:
+        st.sidebar.error(f"❌ Invalid file: {e}")
 
 if run_btn:
     if "actual_df" not in st.session_state:
@@ -94,27 +102,32 @@ if run_btn:
     budget_df = st.session_state["budget_df"]
 
     with st.spinner("Running analysis..."):
-        load_csv_to_db(actual_df, budget_df)
-        variance_df = get_variance_analysis()
-        dept_df = get_department_summary()
-        trends_df = get_rolling_trends()
-        variance_df = detect_anomalies(variance_df)
+        try:
+            load_csv_to_db(actual_df, budget_df)
+        except ValueError as e:
+            st.error(f"❌ Data loading failed: {e}")
+            st.stop()
+
+        variance_df    = get_variance_analysis()
+        dept_df        = get_department_summary()
+        trends_df      = get_rolling_trends()
+        variance_df    = detect_anomalies(variance_df)
         anomaly_summary = get_anomaly_summary(variance_df)
-        risk_flags = generate_risk_flags(variance_df)
+        risk_flags     = generate_risk_flags(variance_df)
 
     st.divider()
 
     # ── KPI CARDS ──────────────────────────────────────────────────────────────
-    total_actual = variance_df["actual_amount"].sum()
-    total_budget = variance_df["budget_amount"].sum()
-    total_var = total_actual - total_budget
+    total_actual  = variance_df["actual_amount"].sum()
+    total_budget  = variance_df["budget_amount"].sum()
+    total_var     = total_actual - total_budget
     total_var_pct = (total_var / total_budget * 100) if total_budget != 0 else 0
 
     k1, k2, k3, k4 = st.columns(4)
-    k1.metric("Total Actual", f"${total_actual:,.0f}")
-    k2.metric("Total Budget", f"${total_budget:,.0f}")
-    k3.metric("Net Variance $", f"${total_var:,.0f}", delta=f"{total_var_pct:+.2f}%")
-    k4.metric("Anomalies Detected", anomaly_summary.get("total_anomalies", 0))
+    k1.metric("Total Actual",       f"${total_actual:,.0f}")
+    k2.metric("Total Budget",       f"${total_budget:,.0f}")
+    k3.metric("Net Variance $",     f"${total_var:,.0f}", delta=f"{total_var_pct:+.2f}%")
+    k4.metric("Anomalies Detected", anomaly_summary["total_anomalies"])
 
     st.divider()
 
@@ -139,7 +152,7 @@ if run_btn:
 
     # ── WATERFALL CHART ────────────────────────────────────────────────────────
     st.subheader("📉 Variance Waterfall — Top 10 Line Items")
-    top10 = variance_df.head(10).copy()
+    top10  = variance_df.head(10).copy()
     colors = ["red" if v < 0 else "green" for v in top10["variance_dollar"]]
 
     fig_waterfall = go.Figure(go.Bar(
@@ -147,16 +160,12 @@ if run_btn:
         y=top10["variance_dollar"],
         marker_color=colors,
         text=[f"${v:,.0f}" for v in top10["variance_dollar"]],
-        textposition="outside"
+        textposition="outside",
     ))
     fig_waterfall.update_layout(
-        xaxis_title="Line Item",
-        yaxis_title="Variance ($)",
-        height=400,
-        xaxis_tickangle=-45,
-        paper_bgcolor="#0a0e1a",
-        plot_bgcolor="#0a0e1a",
-        font_color="#f1f5f9"
+        xaxis_title="Line Item", yaxis_title="Variance ($)",
+        height=400, xaxis_tickangle=-45,
+        paper_bgcolor="#0a0e1a", plot_bgcolor="#0a0e1a", font_color="#f1f5f9",
     )
     st.plotly_chart(fig_waterfall, use_container_width=True)
 
@@ -167,21 +176,15 @@ if run_btn:
     if not trends_df.empty:
         fig_trend = go.Figure()
         for dept in trends_df["department"].unique():
-            dept_data = trends_df[trends_df["department"] == dept]
+            d = trends_df[trends_df["department"] == dept]
             fig_trend.add_trace(go.Scatter(
-                x=dept_data["period"],
-                y=dept_data["rolling_3m_avg"],
-                mode="lines+markers",
-                name=dept
+                x=d["period"], y=d["rolling_3m_avg"],
+                mode="lines+markers", name=dept,
             ))
         fig_trend.update_layout(
-            xaxis_title="Period",
-            yaxis_title="Rolling 3M Avg ($)",
-            height=400,
-            legend_title="Department",
-            paper_bgcolor="#0a0e1a",
-            plot_bgcolor="#0a0e1a",
-            font_color="#f1f5f9"
+            xaxis_title="Period", yaxis_title="Rolling 3M Avg ($)",
+            height=400, legend_title="Department",
+            paper_bgcolor="#0a0e1a", plot_bgcolor="#0a0e1a", font_color="#f1f5f9",
         )
         st.plotly_chart(fig_trend, use_container_width=True)
 
@@ -192,10 +195,13 @@ if run_btn:
     anomaly_df = variance_df[variance_df["is_anomaly"] == True].copy()
     if not anomaly_df.empty:
         st.dataframe(
-            anomaly_df[["department", "line_item", "period", "actual_amount",
-                         "budget_amount", "variance_dollar", "variance_pct"]],
+            anomaly_df[[
+                "department", "line_item", "period",
+                "actual_amount", "budget_amount",
+                "variance_dollar", "variance_pct",
+            ]],
             use_container_width=True,
-            hide_index=True
+            hide_index=True,
         )
     else:
         st.success("No anomalies detected.")
@@ -221,5 +227,5 @@ if run_btn:
             label="⬇️ Download Excel Report",
             data=f,
             file_name="variance_report.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )

@@ -20,59 +20,51 @@ What counts as a good anomaly?
 """
 
 import pandas as pd
-import numpy as np
 from sklearn.ensemble import IsolationForest
-
 
 FEATURES = ["actual_amount", "budget_amount", "variance_dollar", "variance_pct"]
 
 
 def detect_anomalies(df: pd.DataFrame, contamination: float = 0.1) -> pd.DataFrame:
     """
-    Add an `is_anomaly` boolean column to the variance dataframe.
+    Add is_anomaly (bool) and anomaly_score (float) columns to variance dataframe.
 
     Parameters
     ----------
-    df : pd.DataFrame
-        Variance dataframe with columns: actual_amount, budget_amount,
-        variance_dollar, variance_pct.
-    contamination : float
-        Expected proportion of anomalies in the dataset (default 0.1 = 10%).
+    df            : DataFrame with actual_amount, budget_amount, variance_dollar, variance_pct
+    contamination : expected proportion of anomalies (default 0.1 = 10%)
 
     Returns
     -------
-    pd.DataFrame
-        Original dataframe with `is_anomaly` column added.
+    DataFrame with two new columns: is_anomaly, anomaly_score
     """
     df = df.copy()
 
-    # Validate required columns exist
     missing = [c for c in FEATURES if c not in df.columns]
     if missing:
         raise ValueError(f"Missing required columns for anomaly detection: {missing}")
 
     X = df[FEATURES].fillna(0).values
-
     model = IsolationForest(contamination=contamination, random_state=42, n_jobs=-1)
     preds = model.fit_predict(X)
 
-    # IsolationForest returns -1 for anomalies, 1 for normal
-    df["is_anomaly"] = preds == -1
-    df["anomaly_score"] = model.decision_function(X)  # lower = more anomalous
+    df["is_anomaly"] = preds == -1          # -1 = anomaly, 1 = normal
+    df["anomaly_score"] = model.decision_function(X)   # lower = more anomalous
 
     return df
 
 
 def get_anomaly_summary(df: pd.DataFrame) -> dict:
     """
-    Build a summary dict with keys used by both app.py and commentary_agent.py.
+    Return a summary dict with a stable contract used by app.py and commentary_agent.py.
 
-    Keys returned
-    -------------
+    Keys
+    ----
     total_anomalies      : int   — count of flagged rows
-    departments_affected : list  — unique departments with at least one anomaly
+    departments_affected : list  — departments with at least one anomaly
     anomaly_rate         : float — anomalies / total rows * 100
-    top_anomalies        : list  — top 3 anomalies as dicts with dept/item/variance
+    top_anomalies        : list  — top 3 anomalies [{department, line_item,
+                                    variance_dollar, variance_pct}]
     """
     if "is_anomaly" not in df.columns:
         return {
@@ -83,12 +75,10 @@ def get_anomaly_summary(df: pd.DataFrame) -> dict:
         }
 
     anomalies = df[df["is_anomaly"] == True]
-
     total = int(len(anomalies))
     departments = sorted(anomalies["department"].unique().tolist()) if total > 0 else []
     rate = round(total / len(df) * 100, 1) if len(df) > 0 else 0.0
 
-    # Top 3 by absolute variance dollar
     top = []
     if total > 0:
         top_rows = anomalies.reindex(
