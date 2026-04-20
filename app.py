@@ -88,7 +88,8 @@ if run_btn:
         st.subheader("⚠️ Risk Flags")
         if risk_flags:
             for flag in risk_flags:
-                st.warning(f"**{flag['period']}** | {flag['item']} | {flag['message']}")
+                for flag in risk_flags:
+    st.warning(flag)
         else:
             st.success("No items exceed 10% variance threshold.")
 
