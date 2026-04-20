@@ -1,3 +1,15 @@
+"""
+commentary_agent.py
+-------------------
+Generates board-ready management commentary and risk flags using the Groq API.
+
+Commentary quality is judged by:
+  - Does it correctly identify the top favorable/unfavorable variances?
+  - Does it mention the departments with the largest gaps?
+  - Is the tone professional and concise (3–4 paragraphs)?
+  - Does it flag items that need leadership attention?
+"""
+
 import os
 from groq import Groq
 from dotenv import load_dotenv
@@ -5,8 +17,34 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _get_client():
+    """Lazily initialize Groq client — reads API key at call time, not import time."""
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise EnvironmentError(
+            "GROQ_API_KEY is not set. Add it to your .env file or Streamlit secrets."
+        )
+    return Groq(api_key=api_key)
+
+
 def generate_commentary(variance_df, anomaly_summary, dept_summary_df) -> str:
-    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    """
+    Generate 3–4 paragraph board-ready management commentary.
+
+    Parameters
+    ----------
+    variance_df     : DataFrame with variance_dollar, variance_pct, actual_amount, budget_amount
+    anomaly_summary : dict with keys total_anomalies, departments_affected
+    dept_summary_df : DataFrame with department-level totals
+
+    Returns
+    -------
+    str — management commentary, or a fallback message on API failure
+    """
+    try:
+        client = _get_client()
+    except EnvironmentError as e:
+        return f"⚠️ Commentary unavailable: {e}"
 
     top_unfavorable = variance_df[variance_df["variance_dollar"] < 0].head(3)
     top_favorable = variance_df[variance_df["variance_dollar"] > 0].head(3)
@@ -22,7 +60,7 @@ def generate_commentary(variance_df, anomaly_summary, dept_summary_df) -> str:
     ])
 
     dept_text = "\n".join([
-        f"- {r['department']}: Actual ${r['total_actual']:,.0f} vs Budget ${r['total_budget']:,.0f} ({r['variance_pct']:+.1f}%)"
+        f"- {r.iloc[0]}: Actual ${r.iloc[1]:,.0f} vs Budget ${r.iloc[2]:,.0f} ({r.iloc[4]:+.1f}%)"
         for _, r in dept_summary_df.iterrows()
     ])
 
@@ -62,22 +100,41 @@ Write a concise management commentary (3-4 paragraphs) that:
 Tone: professional, direct, board-ready. Avoid jargon. Do not use bullet points.
 """
 
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=1024
-    )
-    return response.choices[0].message.content
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=1024
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return (
+            f"⚠️ Commentary generation failed. Please check your API key and try again.\n"
+            f"Error: {str(e)}"
+        )
 
 
 def generate_risk_flags(variance_df) -> list:
-    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    """
+    Generate 3–5 concise risk flags for line items with >10% variance.
+
+    Returns
+    -------
+    list of str — each item is one risk flag sentence, or a fallback list on failure
+    """
+    try:
+        client = _get_client()
+    except EnvironmentError:
+        # Return rule-based flags if no API key — still useful
+        return _rule_based_flags(variance_df)
 
     high_variance = variance_df[abs(variance_df["variance_pct"]) > 10].copy()
-    high_variance = high_variance.sort_values("variance_pct", key=abs, ascending=False).head(10)
+    high_variance = high_variance.reindex(
+        high_variance["variance_pct"].abs().sort_values(ascending=False).index
+    ).head(10)
 
     if high_variance.empty:
-        return ["No significant risk flags detected."]
+        return ["No significant risk flags detected — all line items within 10% of budget."]
 
     items_text = "\n".join([
         f"- {r['department']} | {r['line_item']} | ${r['variance_dollar']:,.0f} ({r['variance_pct']:+.1f}%)"
@@ -85,7 +142,7 @@ def generate_risk_flags(variance_df) -> list:
     ])
 
     prompt = f"""
-You are a senior FP&A analyst. Based on these high-variance line items (>10% off budget), 
+You are a senior FP&A analyst. Based on these high-variance line items (>10% off budget),
 generate 3-5 concise risk flags for leadership. Each flag should be one sentence.
 
 High Variance Items:
@@ -94,12 +151,32 @@ High Variance Items:
 Format each risk flag as a single sentence starting with the department name.
 """
 
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=512
-    )
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=512
+        )
+        raw = response.choices[0].message.content
+        flags = [line.strip("- •").strip() for line in raw.strip().split("\n") if line.strip()]
+        return flags if flags else _rule_based_flags(variance_df)
+    except Exception:
+        return _rule_based_flags(variance_df)
 
-    raw = response.choices[0].message.content
-    flags = [line.strip("- ").strip() for line in raw.strip().split("\n") if line.strip()]
+
+def _rule_based_flags(variance_df) -> list:
+    """Fallback: generate simple rule-based flags without an LLM."""
+    high = variance_df[abs(variance_df["variance_pct"]) > 10].copy()
+    high = high.reindex(high["variance_pct"].abs().sort_values(ascending=False).index).head(5)
+
+    if high.empty:
+        return ["No significant risk flags detected — all line items within 10% of budget."]
+
+    flags = []
+    for _, r in high.iterrows():
+        direction = "over" if r["variance_dollar"] > 0 else "under"
+        flags.append(
+            f"{r['department']} — {r['line_item']} is {abs(r['variance_pct']):.1f}% "
+            f"{direction} budget (${abs(r['variance_dollar']):,.0f})."
+        )
     return flags
