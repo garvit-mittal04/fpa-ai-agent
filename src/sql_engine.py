@@ -25,19 +25,20 @@ def init_db():
         """))
         conn.commit()
 
-def load_csv_to_db(actuals_path, budget_path):
+def load_csv_to_db(actuals_df: pd.DataFrame, budget_df: pd.DataFrame):
     engine = get_engine()
     init_db()
-    with engine.connect() as conn:
-        conn.execute(text("DELETE FROM financial_data"))
-        conn.commit()
 
-    actuals_df = pd.read_csv(actuals_path)
+    actuals_df = actuals_df.copy()
+    budget_df = budget_df.copy()
+
     actuals_df["data_type"] = "actual"
-    budget_df = pd.read_csv(budget_path)
     budget_df["data_type"] = "budget"
+
     combined = pd.concat([actuals_df, budget_df], ignore_index=True)
-    combined.to_sql("financial_data", get_engine(), if_exists="append", index=False)
+    combined.columns = [c.lower().strip() for c in combined.columns]
+
+    combined.to_sql("financial_data", engine, if_exists="replace", index=False)
     print("Data loaded successfully!")
 
 def get_variance_analysis():
