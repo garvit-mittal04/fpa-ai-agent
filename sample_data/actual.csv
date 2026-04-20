@@ -1,31 +1,409 @@
 period,department,line_item,amount
-2024-01,Sales,Revenue,485000
-2024-01,Sales,Cost of Goods Sold,210000
-2024-01,Sales,Sales Commissions,24000
-2024-01,Marketing,Digital Advertising,38000
-2024-01,Marketing,Events & Sponsorships,12000
-2024-01,Operations,Salaries,95000
-2024-01,Operations,Rent & Utilities,18000
-2024-01,Operations,Software & Tools,8500
-2024-01,Finance,Salaries,42000
-2024-01,Finance,Audit & Compliance,6000
-2024-02,Sales,Revenue,512000
-2024-02,Sales,Cost of Goods Sold,198000
-2024-02,Sales,Sales Commissions,26000
-2024-02,Marketing,Digital Advertising,45000
-2024-02,Marketing,Events & Sponsorships,9000
-2024-02,Operations,Salaries,95000
-2024-02,Operations,Rent & Utilities,19500
-2024-02,Operations,Software & Tools,9200
-2024-02,Finance,Salaries,42000
-2024-02,Finance,Audit & Compliance,4500
-2024-03,Sales,Revenue,539000
-2024-03,Sales,Cost of Goods Sold,221000
-2024-03,Sales,Sales Commissions,27000
-2024-03,Marketing,Digital Advertising,52000
-2024-03,Marketing,Events & Sponsorships,18000
-2024-03,Operations,Salaries,97000
-2024-03,Operations,Rent & Utilities,18000
-2024-03,Operations,Software & Tools,8800
-2024-03,Finance,Salaries,43000
-2024-03,Finance,Audit & Compliance,5500
+2023-01,Sales,Product Revenue,673004.72
+2023-01,Sales,Service Revenue,244191.43
+2023-01,Sales,Subscription Revenue,138232.58
+2023-01,Sales,Sales Commissions,66137.95
+2023-01,Sales,Cost of Goods Sold,288942.96
+2023-01,Sales,Sales Travel & Entertainment,17207.8
+2023-01,Sales,Customer Discounts & Refunds,14421.73
+2023-01,Marketing,Digital Advertising,63104.69
+2023-01,Marketing,Content & SEO,15446.33
+2023-01,Marketing,Events & Sponsorships,22317.21
+2023-01,Marketing,PR & Communications,10029.31
+2023-01,Marketing,Marketing Headcount,77198.42
+2023-01,Marketing,Brand & Design,12130.29
+2023-01,Operations,Salaries & Benefits,149796.81
+2023-01,Operations,Rent & Facilities,26625.11
+2023-01,Operations,Software & Tools,20992.02
+2023-01,Operations,IT Infrastructure,14974.16
+2023-01,Operations,Logistics & Shipping,38014.34
+2023-01,Operations,Equipment & Maintenance,9395.1
+2023-01,Finance,Salaries & Benefits,78471.4
+2023-01,Finance,Audit & Compliance,12432.91
+2023-01,Finance,Banking & Fees,3303.87
+2023-01,Finance,Insurance,6871.79
+2023-01,Finance,Legal & Professional Services,10946.97
+2023-01,HR,Salaries & Benefits,66511.21
+2023-01,HR,Recruiting & Hiring,15969.12
+2023-01,HR,Training & Development,6398.3
+2023-01,HR,Employee Benefits & Perks,16689.07
+2023-01,HR,HR Software,4111.83
+2023-01,R&D,Engineering Salaries,188072.37
+2023-01,R&D,Research Materials,12086.6
+2023-01,R&D,Cloud Infrastructure,23619.13
+2023-01,R&D,Patents & Licensing,6334.2
+2023-01,R&D,Contractor & Consulting,32286.27
+2023-02,Sales,Product Revenue,676531.27
+2023-02,Sales,Service Revenue,304539.36
+2023-02,Sales,Subscription Revenue,172499.94
+2023-02,Sales,Sales Commissions,70825.07
+2023-02,Sales,Cost of Goods Sold,285866.86
+2023-02,Sales,Sales Travel & Entertainment,18843.61
+2023-02,Sales,Customer Discounts & Refunds,14842.08
+2023-02,Marketing,Digital Advertising,66909.43
+2023-02,Marketing,Content & SEO,17207.54
+2023-02,Marketing,Events & Sponsorships,22727.41
+2023-02,Marketing,PR & Communications,11252.93
+2023-02,Marketing,Marketing Headcount,88454.6
+2023-02,Marketing,Brand & Design,12371.4
+2023-02,Operations,Salaries & Benefits,153220.54
+2023-02,Operations,Rent & Facilities,27256.89
+2023-02,Operations,Software & Tools,18793.75
+2023-02,Operations,IT Infrastructure,17139.98
+2023-02,Operations,Logistics & Shipping,38654.77
+2023-02,Operations,Equipment & Maintenance,10140.36
+2023-02,Finance,Salaries & Benefits,80450.29
+2023-02,Finance,Audit & Compliance,14043.03
+2023-02,Finance,Banking & Fees,3680.73
+2023-02,Finance,Insurance,7634.0
+2023-02,Finance,Legal & Professional Services,11174.9
+2023-02,HR,Salaries & Benefits,67376.14
+2023-02,HR,Recruiting & Hiring,15626.18
+2023-02,HR,Training & Development,6501.19
+2023-02,HR,Employee Benefits & Perks,20501.3
+2023-02,HR,HR Software,4051.96
+2023-02,R&D,Engineering Salaries,192764.87
+2023-02,R&D,Research Materials,11993.09
+2023-02,R&D,Cloud Infrastructure,26010.42
+2023-02,R&D,Patents & Licensing,6991.5
+2023-02,R&D,Contractor & Consulting,30324.91
+2023-03,Sales,Product Revenue,917693.41
+2023-03,Sales,Service Revenue,336923.52
+2023-03,Sales,Subscription Revenue,187905.3
+2023-03,Sales,Sales Commissions,75098.25
+2023-03,Sales,Cost of Goods Sold,285998.49
+2023-03,Sales,Sales Travel & Entertainment,20411.55
+2023-03,Sales,Customer Discounts & Refunds,16690.4
+2023-03,Marketing,Digital Advertising,74030.98
+2023-03,Marketing,Content & SEO,17599.03
+2023-03,Marketing,Events & Sponsorships,27087.26
+2023-03,Marketing,PR & Communications,11573.55
+2023-03,Marketing,Marketing Headcount,93934.85
+2023-03,Marketing,Brand & Design,12332.09
+2023-03,Operations,Salaries & Benefits,167195.22
+2023-03,Operations,Rent & Facilities,30355.3
+2023-03,Operations,Software & Tools,19771.08
+2023-03,Operations,IT Infrastructure,16125.58
+2023-03,Operations,Logistics & Shipping,42750.01
+2023-03,Operations,Equipment & Maintenance,10850.61
+2023-03,Finance,Salaries & Benefits,87316.29
+2023-03,Finance,Audit & Compliance,15715.93
+2023-03,Finance,Banking & Fees,3864.63
+2023-03,Finance,Insurance,7830.15
+2023-03,Finance,Legal & Professional Services,10830.66
+2023-03,HR,Salaries & Benefits,71167.15
+2023-03,HR,Recruiting & Hiring,17976.97
+2023-03,HR,Training & Development,7299.61
+2023-03,HR,Employee Benefits & Perks,22865.78
+2023-03,HR,HR Software,5132.38
+2023-03,R&D,Engineering Salaries,205521.75
+2023-03,R&D,Research Materials,15073.51
+2023-03,R&D,Cloud Infrastructure,27322.49
+2023-03,R&D,Patents & Licensing,7660.85
+2023-03,R&D,Contractor & Consulting,30073.96
+2023-04,Sales,Product Revenue,884207.64
+2023-04,Sales,Service Revenue,305336.98
+2023-04,Sales,Subscription Revenue,172830.75
+2023-04,Sales,Sales Commissions,86490.88
+2023-04,Sales,Cost of Goods Sold,327936.83
+2023-04,Sales,Sales Travel & Entertainment,22061.22
+2023-04,Sales,Customer Discounts & Refunds,16754.63
+2023-04,Marketing,Digital Advertising,69972.05
+2023-04,Marketing,Content & SEO,17752.78
+2023-04,Marketing,Events & Sponsorships,28822.09
+2023-04,Marketing,PR & Communications,11974.33
+2023-04,Marketing,Marketing Headcount,93389.63
+2023-04,Marketing,Brand & Design,14068.37
+2023-04,Operations,Salaries & Benefits,169111.27
+2023-04,Operations,Rent & Facilities,32365.03
+2023-04,Operations,Software & Tools,24138.85
+2023-04,Operations,IT Infrastructure,17609.61
+2023-04,Operations,Logistics & Shipping,44651.87
+2023-04,Operations,Equipment & Maintenance,12802.17
+2023-04,Finance,Salaries & Benefits,97716.54
+2023-04,Finance,Audit & Compliance,14185.05
+2023-04,Finance,Banking & Fees,3856.03
+2023-04,Finance,Insurance,7771.83
+2023-04,Finance,Legal & Professional Services,12540.88
+2023-04,HR,Salaries & Benefits,72025.05
+2023-04,HR,Recruiting & Hiring,19502.56
+2023-04,HR,Training & Development,7698.82
+2023-04,HR,Employee Benefits & Perks,23109.87
+2023-04,HR,HR Software,5158.7
+2023-04,R&D,Engineering Salaries,211134.79
+2023-04,R&D,Research Materials,15901.52
+2023-04,R&D,Cloud Infrastructure,30958.91
+2023-04,R&D,Patents & Licensing,7847.72
+2023-04,R&D,Contractor & Consulting,35961.05
+2023-05,Sales,Product Revenue,946968.43
+2023-05,Sales,Service Revenue,329895.47
+2023-05,Sales,Subscription Revenue,171076.32
+2023-05,Sales,Sales Commissions,79022.66
+2023-05,Sales,Cost of Goods Sold,318238.61
+2023-05,Sales,Sales Travel & Entertainment,22555.04
+2023-05,Sales,Customer Discounts & Refunds,16191.8
+2023-05,Marketing,Digital Advertising,76397.98
+2023-05,Marketing,Content & SEO,18029.02
+2023-05,Marketing,Events & Sponsorships,27373.13
+2023-05,Marketing,PR & Communications,11307.7
+2023-05,Marketing,Marketing Headcount,94884.79
+2023-05,Marketing,Brand & Design,14708.28
+2023-05,Operations,Salaries & Benefits,191403.72
+2023-05,Operations,Rent & Facilities,34469.59
+2023-05,Operations,Software & Tools,21790.72
+2023-05,Operations,IT Infrastructure,16750.53
+2023-05,Operations,Logistics & Shipping,46655.9
+2023-05,Operations,Equipment & Maintenance,12976.16
+2023-05,Finance,Salaries & Benefits,94481.56
+2023-05,Finance,Audit & Compliance,14236.11
+2023-05,Finance,Banking & Fees,4267.68
+2023-05,Finance,Insurance,7875.83
+2023-05,Finance,Legal & Professional Services,13172.32
+2023-05,HR,Salaries & Benefits,77263.96
+2023-05,HR,Recruiting & Hiring,17349.57
+2023-05,HR,Training & Development,8506.65
+2023-05,HR,Employee Benefits & Perks,20113.32
+2023-05,HR,HR Software,4505.38
+2023-05,R&D,Engineering Salaries,231986.45
+2023-05,R&D,Research Materials,14047.57
+2023-05,R&D,Cloud Infrastructure,31204.46
+2023-05,R&D,Patents & Licensing,7894.16
+2023-05,R&D,Contractor & Consulting,36304.73
+2023-06,Sales,Product Revenue,835907.84
+2023-06,Sales,Service Revenue,348535.79
+2023-06,Sales,Subscription Revenue,206294.13
+2023-06,Sales,Sales Commissions,84025.89
+2023-06,Sales,Cost of Goods Sold,326145.82
+2023-06,Sales,Sales Travel & Entertainment,22828.76
+2023-06,Sales,Customer Discounts & Refunds,19692.05
+2023-06,Marketing,Digital Advertising,79320.8
+2023-06,Marketing,Content & SEO,19024.66
+2023-06,Marketing,Events & Sponsorships,29491.28
+2023-06,Marketing,PR & Communications,13998.41
+2023-06,Marketing,Marketing Headcount,89494.88
+2023-06,Marketing,Brand & Design,12965.39
+2023-06,Operations,Salaries & Benefits,186425.78
+2023-06,Operations,Rent & Facilities,34508.17
+2023-06,Operations,Software & Tools,21329.94
+2023-06,Operations,IT Infrastructure,18416.46
+2023-06,Operations,Logistics & Shipping,47075.79
+2023-06,Operations,Equipment & Maintenance,13656.07
+2023-06,Finance,Salaries & Benefits,102998.85
+2023-06,Finance,Audit & Compliance,14541.24
+2023-06,Finance,Banking & Fees,4524.77
+2023-06,Finance,Insurance,8496.09
+2023-06,Finance,Legal & Professional Services,13194.46
+2023-06,HR,Salaries & Benefits,80013.69
+2023-06,HR,Recruiting & Hiring,19032.27
+2023-06,HR,Training & Development,8960.51
+2023-06,HR,Employee Benefits & Perks,24365.44
+2023-06,HR,HR Software,5594.54
+2023-06,R&D,Engineering Salaries,233928.65
+2023-06,R&D,Research Materials,14114.68
+2023-06,R&D,Cloud Infrastructure,32716.73
+2023-06,R&D,Patents & Licensing,9056.84
+2023-06,R&D,Contractor & Consulting,38297.95
+2023-07,Sales,Product Revenue,835933.93
+2023-07,Sales,Service Revenue,321589.33
+2023-07,Sales,Subscription Revenue,175508.11
+2023-07,Sales,Sales Commissions,83648.77
+2023-07,Sales,Cost of Goods Sold,331868.19
+2023-07,Sales,Sales Travel & Entertainment,23587.78
+2023-07,Sales,Customer Discounts & Refunds,17637.19
+2023-07,Marketing,Digital Advertising,83176.78
+2023-07,Marketing,Content & SEO,17396.46
+2023-07,Marketing,Events & Sponsorships,27989.55
+2023-07,Marketing,PR & Communications,13755.18
+2023-07,Marketing,Marketing Headcount,91717.64
+2023-07,Marketing,Brand & Design,15170.17
+2023-07,Operations,Salaries & Benefits,196511.35
+2023-07,Operations,Rent & Facilities,42587.12
+2023-07,Operations,Software & Tools,23524.27
+2023-07,Operations,IT Infrastructure,20004.82
+2023-07,Operations,Logistics & Shipping,48400.74
+2023-07,Operations,Equipment & Maintenance,12243.63
+2023-07,Finance,Salaries & Benefits,99547.82
+2023-07,Finance,Audit & Compliance,14734.67
+2023-07,Finance,Banking & Fees,3898.3
+2023-07,Finance,Insurance,9146.32
+2023-07,Finance,Legal & Professional Services,14228.77
+2023-07,HR,Salaries & Benefits,79358.25
+2023-07,HR,Recruiting & Hiring,18771.5
+2023-07,HR,Training & Development,8013.7
+2023-07,HR,Employee Benefits & Perks,22197.75
+2023-07,HR,HR Software,5557.35
+2023-07,R&D,Engineering Salaries,238372.04
+2023-07,R&D,Research Materials,17777.8
+2023-07,R&D,Cloud Infrastructure,34644.26
+2023-07,R&D,Patents & Licensing,8662.0
+2023-07,R&D,Contractor & Consulting,38731.59
+2023-08,Sales,Product Revenue,889607.59
+2023-08,Sales,Service Revenue,385613.66
+2023-08,Sales,Subscription Revenue,204891.95
+2023-08,Sales,Sales Commissions,89980.96
+2023-08,Sales,Cost of Goods Sold,332189.52
+2023-08,Sales,Sales Travel & Entertainment,24388.4
+2023-08,Sales,Customer Discounts & Refunds,21129.36
+2023-08,Marketing,Digital Advertising,86665.18
+2023-08,Marketing,Content & SEO,19086.98
+2023-08,Marketing,Events & Sponsorships,32539.26
+2023-08,Marketing,PR & Communications,13995.68
+2023-08,Marketing,Marketing Headcount,116105.06
+2023-08,Marketing,Brand & Design,15962.61
+2023-08,Operations,Salaries & Benefits,202144.33
+2023-08,Operations,Rent & Facilities,35766.88
+2023-08,Operations,Software & Tools,22931.35
+2023-08,Operations,IT Infrastructure,22134.51
+2023-08,Operations,Logistics & Shipping,48917.91
+2023-08,Operations,Equipment & Maintenance,14337.38
+2023-08,Finance,Salaries & Benefits,108809.96
+2023-08,Finance,Audit & Compliance,16188.44
+2023-08,Finance,Banking & Fees,3955.1
+2023-08,Finance,Insurance,9555.33
+2023-08,Finance,Legal & Professional Services,14946.21
+2023-08,HR,Salaries & Benefits,84110.31
+2023-08,HR,Recruiting & Hiring,21749.93
+2023-08,HR,Training & Development,8580.88
+2023-08,HR,Employee Benefits & Perks,25810.25
+2023-08,HR,HR Software,5234.65
+2023-08,R&D,Engineering Salaries,246225.98
+2023-08,R&D,Research Materials,15095.17
+2023-08,R&D,Cloud Infrastructure,35984.45
+2023-08,R&D,Patents & Licensing,8979.85
+2023-08,R&D,Contractor & Consulting,39721.67
+2023-09,Sales,Product Revenue,1003566.8
+2023-09,Sales,Service Revenue,379726.94
+2023-09,Sales,Subscription Revenue,209647.53
+2023-09,Sales,Sales Commissions,78826.45
+2023-09,Sales,Cost of Goods Sold,328383.15
+2023-09,Sales,Sales Travel & Entertainment,22663.65
+2023-09,Sales,Customer Discounts & Refunds,18770.82
+2023-09,Marketing,Digital Advertising,81265.96
+2023-09,Marketing,Content & SEO,19241.3
+2023-09,Marketing,Events & Sponsorships,32739.86
+2023-09,Marketing,PR & Communications,13385.43
+2023-09,Marketing,Marketing Headcount,94882.08
+2023-09,Marketing,Brand & Design,16071.8
+2023-09,Operations,Salaries & Benefits,186975.19
+2023-09,Operations,Rent & Facilities,35118.93
+2023-09,Operations,Software & Tools,20841.21
+2023-09,Operations,IT Infrastructure,17191.76
+2023-09,Operations,Logistics & Shipping,46877.29
+2023-09,Operations,Equipment & Maintenance,11978.0
+2023-09,Finance,Salaries & Benefits,101965.23
+2023-09,Finance,Audit & Compliance,14865.77
+2023-09,Finance,Banking & Fees,3743.91
+2023-09,Finance,Insurance,7868.56
+2023-09,Finance,Legal & Professional Services,11339.44
+2023-09,HR,Salaries & Benefits,76776.4
+2023-09,HR,Recruiting & Hiring,18062.96
+2023-09,HR,Training & Development,8721.65
+2023-09,HR,Employee Benefits & Perks,23806.53
+2023-09,HR,HR Software,4847.77
+2023-09,R&D,Engineering Salaries,242141.84
+2023-09,R&D,Research Materials,14650.89
+2023-09,R&D,Cloud Infrastructure,35699.97
+2023-09,R&D,Patents & Licensing,7761.95
+2023-09,R&D,Contractor & Consulting,36351.52
+2023-10,Sales,Product Revenue,867722.99
+2023-10,Sales,Service Revenue,348298.19
+2023-10,Sales,Subscription Revenue,173228.21
+2023-10,Sales,Sales Commissions,94750.45
+2023-10,Sales,Cost of Goods Sold,318453.82
+2023-10,Sales,Sales Travel & Entertainment,21680.65
+2023-10,Sales,Customer Discounts & Refunds,17448.43
+2023-10,Marketing,Digital Advertising,74066.08
+2023-10,Marketing,Content & SEO,17196.8
+2023-10,Marketing,Events & Sponsorships,27097.26
+2023-10,Marketing,PR & Communications,12894.95
+2023-10,Marketing,Marketing Headcount,100934.64
+2023-10,Marketing,Brand & Design,14523.23
+2023-10,Operations,Salaries & Benefits,179448.14
+2023-10,Operations,Rent & Facilities,37647.58
+2023-10,Operations,Software & Tools,20683.42
+2023-10,Operations,IT Infrastructure,17625.57
+2023-10,Operations,Logistics & Shipping,55390.57
+2023-10,Operations,Equipment & Maintenance,12863.8
+2023-10,Finance,Salaries & Benefits,93093.51
+2023-10,Finance,Audit & Compliance,14220.14
+2023-10,Finance,Banking & Fees,3746.38
+2023-10,Finance,Insurance,7528.6
+2023-10,Finance,Legal & Professional Services,11479.33
+2023-10,HR,Salaries & Benefits,76200.63
+2023-10,HR,Recruiting & Hiring,17425.57
+2023-10,HR,Training & Development,8871.47
+2023-10,HR,Employee Benefits & Perks,24386.35
+2023-10,HR,HR Software,4695.1
+2023-10,R&D,Engineering Salaries,232510.23
+2023-10,R&D,Research Materials,15571.99
+2023-10,R&D,Cloud Infrastructure,34210.31
+2023-10,R&D,Patents & Licensing,7724.43
+2023-10,R&D,Contractor & Consulting,35594.37
+2023-11,Sales,Product Revenue,883830.52
+2023-11,Sales,Service Revenue,352742.82
+2023-11,Sales,Subscription Revenue,192630.29
+2023-11,Sales,Sales Commissions,95712.07
+2023-11,Sales,Cost of Goods Sold,326822.5
+2023-11,Sales,Sales Travel & Entertainment,21995.03
+2023-11,Sales,Customer Discounts & Refunds,20015.33
+2023-11,Marketing,Digital Advertising,82729.36
+2023-11,Marketing,Content & SEO,21440.22
+2023-11,Marketing,Events & Sponsorships,31360.65
+2023-11,Marketing,PR & Communications,12964.82
+2023-11,Marketing,Marketing Headcount,116359.01
+2023-11,Marketing,Brand & Design,14906.42
+2023-11,Operations,Salaries & Benefits,209768.18
+2023-11,Operations,Rent & Facilities,35116.59
+2023-11,Operations,Software & Tools,25368.78
+2023-11,Operations,IT Infrastructure,19091.25
+2023-11,Operations,Logistics & Shipping,60078.09
+2023-11,Operations,Equipment & Maintenance,13997.8
+2023-11,Finance,Salaries & Benefits,107603.33
+2023-11,Finance,Audit & Compliance,17914.36
+2023-11,Finance,Banking & Fees,4732.93
+2023-11,Finance,Insurance,8707.57
+2023-11,Finance,Legal & Professional Services,12877.2
+2023-11,HR,Salaries & Benefits,85261.86
+2023-11,HR,Recruiting & Hiring,21421.28
+2023-11,HR,Training & Development,8975.08
+2023-11,HR,Employee Benefits & Perks,25868.11
+2023-11,HR,HR Software,5952.57
+2023-11,R&D,Engineering Salaries,245828.58
+2023-11,R&D,Research Materials,17402.93
+2023-11,R&D,Cloud Infrastructure,38450.89
+2023-11,R&D,Patents & Licensing,9701.15
+2023-11,R&D,Contractor & Consulting,36935.49
+2023-12,Sales,Product Revenue,1088344.84
+2023-12,Sales,Service Revenue,450268.06
+2023-12,Sales,Subscription Revenue,233436.65
+2023-12,Sales,Sales Commissions,96363.09
+2023-12,Sales,Cost of Goods Sold,391689.91
+2023-12,Sales,Sales Travel & Entertainment,24445.95
+2023-12,Sales,Customer Discounts & Refunds,22851.27
+2023-12,Marketing,Digital Advertising,92595.51
+2023-12,Marketing,Content & SEO,20580.39
+2023-12,Marketing,Events & Sponsorships,31169.07
+2023-12,Marketing,PR & Communications,14998.95
+2023-12,Marketing,Marketing Headcount,112460.71
+2023-12,Marketing,Brand & Design,16054.86
+2023-12,Operations,Salaries & Benefits,217194.25
+2023-12,Operations,Rent & Facilities,38205.92
+2023-12,Operations,Software & Tools,29321.97
+2023-12,Operations,IT Infrastructure,22537.26
+2023-12,Operations,Logistics & Shipping,64772.2
+2023-12,Operations,Equipment & Maintenance,14774.66
+2023-12,Finance,Salaries & Benefits,115090.97
+2023-12,Finance,Audit & Compliance,20041.1
+2023-12,Finance,Banking & Fees,4415.64
+2023-12,Finance,Insurance,10548.88
+2023-12,Finance,Legal & Professional Services,15260.44
+2023-12,HR,Salaries & Benefits,92101.42
+2023-12,HR,Recruiting & Hiring,21279.59
+2023-12,HR,Training & Development,9035.57
+2023-12,HR,Employee Benefits & Perks,24216.65
+2023-12,HR,HR Software,5819.08
+2023-12,R&D,Engineering Salaries,271257.79
+2023-12,R&D,Research Materials,17288.16
+2023-12,R&D,Cloud Infrastructure,41973.33
+2023-12,R&D,Patents & Licensing,9351.56
+2023-12,R&D,Contractor & Consulting,38435.19
