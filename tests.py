@@ -77,7 +77,7 @@ def test_schema_validation_fail():
         validate_schema(bad, "Test")
         raise AssertionError("Should have raised ValueError")
     except ValueError as e:
-        assert "Missing required columns" in str(e)
+        assert "missing required columns" in str(e).lower()
 
 
 # ─── TEST 3: Data loading ─────────────────────────────────────────────────────

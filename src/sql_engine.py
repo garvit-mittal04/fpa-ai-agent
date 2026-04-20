@@ -45,7 +45,7 @@ def validate_schema(df: pd.DataFrame, label: str):
     missing = REQUIRED_COLUMNS - cols
     if missing:
         raise ValueError(
-            f"{label} CSV is Missing required columns: {missing}. "
+            f"{label} CSV is missing required columns: {missing}. "
             f"Expected: {REQUIRED_COLUMNS}. Found: {cols}"
         )
 
@@ -129,7 +129,12 @@ def get_variance_analysis() -> pd.DataFrame:
 
 
 def get_department_summary() -> pd.DataFrame:
-    """Aggregate actual vs budget totals by department."""
+    """
+    Aggregate actual vs budget totals by department.
+
+    Uses UNION-based full outer join emulation so budget-only departments
+    (departments that exist in budget but have no actuals) are not lost.
+    """
     engine = get_engine()
     query  = text("""
         WITH actuals AS (
@@ -141,16 +146,24 @@ def get_department_summary() -> pd.DataFrame:
             SELECT department, SUM(amount) AS total_budget
             FROM financial_data WHERE data_type = 'budget'
             GROUP BY department
+        ),
+        all_depts AS (
+            SELECT department FROM actuals
+            UNION
+            SELECT department FROM budget
         )
         SELECT
-            a.department,
-            ROUND(a.total_actual, 2)                                          AS total_actual,
-            ROUND(b.total_budget, 2)                                          AS total_budget,
-            ROUND(a.total_actual - b.total_budget, 2)                         AS variance_dollar,
-            ROUND((a.total_actual - b.total_budget)
-                / NULLIF(b.total_budget, 0) * 100, 2)                        AS variance_pct
-        FROM actuals a
-        LEFT JOIN budget b ON a.department = b.department
+            d.department,
+            ROUND(COALESCE(a.total_actual, 0), 2)                             AS total_actual,
+            ROUND(COALESCE(b.total_budget, 0), 2)                             AS total_budget,
+            ROUND(COALESCE(a.total_actual, 0) - COALESCE(b.total_budget, 0), 2) AS variance_dollar,
+            ROUND(
+                (COALESCE(a.total_actual, 0) - COALESCE(b.total_budget, 0))
+                / NULLIF(COALESCE(b.total_budget, 0), 0) * 100, 2
+            )                                                                 AS variance_pct
+        FROM all_depts d
+        LEFT JOIN actuals a ON d.department = a.department
+        LEFT JOIN budget  b ON d.department = b.department
         ORDER BY ABS(variance_dollar) DESC
     """)
     with engine.connect() as conn:
