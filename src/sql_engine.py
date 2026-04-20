@@ -1,51 +1,43 @@
-import pymysql
+import sqlite3
 import pandas as pd
 from sqlalchemy import create_engine, text
-from dotenv import load_dotenv
 import os
 
-load_dotenv()
-
-def get_connection():
-    return pymysql.connect(
-        host=os.getenv("DB_HOST"),
-        port=int(os.getenv("DB_PORT")),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_NAME")
-    )
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(BASE_DIR, "database", "fpa_agent.db")
 
 def get_engine():
-    from urllib.parse import quote_plus
-    user = os.getenv("DB_USER")
-    password = quote_plus(os.getenv("DB_PASSWORD"))
-    host = os.getenv("DB_HOST")
-    port = os.getenv("DB_PORT")
-    db = os.getenv("DB_NAME")
-    return create_engine(f"mysql+pymysql://{user}:{password}@{host}:{port}/{db}")
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    return create_engine(f"sqlite:///{DB_PATH}")
+
+def init_db():
+    engine = get_engine()
+    with engine.connect() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS financial_data (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                period TEXT NOT NULL,
+                department TEXT NOT NULL,
+                line_item TEXT NOT NULL,
+                amount REAL NOT NULL,
+                data_type TEXT NOT NULL
+            )
+        """))
+        conn.commit()
 
 def load_csv_to_db(actuals_path, budget_path):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM financial_data")
+    engine = get_engine()
+    init_db()
+    with engine.connect() as conn:
+        conn.execute(text("DELETE FROM financial_data"))
+        conn.commit()
 
     actuals_df = pd.read_csv(actuals_path)
     actuals_df["data_type"] = "actual"
-
     budget_df = pd.read_csv(budget_path)
     budget_df["data_type"] = "budget"
-
     combined = pd.concat([actuals_df, budget_df], ignore_index=True)
-
-    for _, row in combined.iterrows():
-        cursor.execute("""
-            INSERT INTO financial_data (period, department, line_item, amount, data_type)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (row["period"], row["department"], row["line_item"], row["amount"], row["data_type"]))
-
-    conn.commit()
-    cursor.close()
-    conn.close()
+    combined.to_sql("financial_data", get_engine(), if_exists="append", index=False)
     print("Data loaded successfully!")
 
 def get_variance_analysis():
@@ -77,8 +69,7 @@ def get_variance_analysis():
         ORDER BY ABS(a.actual_amount - b.budget_amount) DESC
     """
     with engine.connect() as conn:
-        df = pd.read_sql(text(query), conn)
-    return df
+        return pd.read_sql(text(query), conn)
 
 def get_rolling_trends():
     engine = get_engine()
@@ -99,8 +90,7 @@ def get_rolling_trends():
         ORDER BY department, line_item, period
     """
     with engine.connect() as conn:
-        df = pd.read_sql(text(query), conn)
-    return df
+        return pd.read_sql(text(query), conn)
 
 def get_department_summary():
     engine = get_engine()
@@ -126,5 +116,4 @@ def get_department_summary():
         ORDER BY ABS(a.total_actual - b.total_budget) DESC
     """
     with engine.connect() as conn:
-        df = pd.read_sql(text(query), conn)
-    return df
+        return pd.read_sql(text(query), conn)

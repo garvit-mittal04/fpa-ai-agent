@@ -4,7 +4,6 @@ import plotly.graph_objects as go
 import plotly.express as px
 import sys
 import os
-from report_generator import generate_excel_report
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(BASE_DIR, 'src'))
@@ -12,6 +11,7 @@ sys.path.insert(0, os.path.join(BASE_DIR, 'src'))
 from sql_engine import load_csv_to_db, get_variance_analysis, get_department_summary, get_rolling_trends
 from anomaly_detector import detect_anomalies, get_anomaly_summary
 from commentary_agent import generate_commentary, generate_risk_flags
+from report_generator import generate_excel_report
 
 st.set_page_config(
     page_title="FP&A AI Analyst Agent",
