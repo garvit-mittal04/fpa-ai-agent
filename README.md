@@ -31,9 +31,6 @@ This project is the AI-powered version of that workflow. It takes the same actua
 
 Click **"Load Sample Data"** in the sidebar, then **"▶ Run Analysis"** to see the full pipeline in action — no login or setup required.
 
-### 📹 Video Walkthrough
-
-https://github.com/user-attachments/assets/cf07c76a-6ed6-49b3-8ba6-f2966673a34e
 
 ---
 
