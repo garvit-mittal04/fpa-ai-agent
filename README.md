@@ -19,6 +19,13 @@ An AI-powered FP&A system that automates:
 - 📥 Excel Reports  
 
 Converts financial data into **board-ready insights in minutes**.
+---
+
+## 💼 Impact
+
+- Reduced FP&A variance analysis time from hours to minutes  
+- Scaled anomaly detection across 10,000+ financial records  
+- Automated generation of executive-ready management commentary  
 
 ---
 
