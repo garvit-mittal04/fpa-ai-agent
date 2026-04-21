@@ -223,6 +223,12 @@ def _clear_analysis_state():
             del st.session_state[key]
 
 
+def _uploaded_file_signature(file):
+    if file is None:
+        return ("", 0)
+    return (file.name, file.size)
+
+
 st.markdown(
     """
 <div style="padding: 8px 0 20px 0;">
@@ -264,15 +270,21 @@ SAMPLE_ACTUAL = os.path.join(BASE_DIR, "sample_data", "actual.csv")
 SAMPLE_BUDGET = os.path.join(BASE_DIR, "sample_data", "budget.csv")
 
 if use_sample:
-    st.session_state["actual_df"] = pd.read_csv(SAMPLE_ACTUAL)
-    st.session_state["budget_df"] = pd.read_csv(SAMPLE_BUDGET)
-    _clear_analysis_state()
+    sample_sig = ("sample_actual.csv", "sample_budget.csv")
+    if st.session_state.get("data_signature") != sample_sig:
+        st.session_state["actual_df"] = pd.read_csv(SAMPLE_ACTUAL)
+        st.session_state["budget_df"] = pd.read_csv(SAMPLE_BUDGET)
+        st.session_state["data_signature"] = sample_sig
+        _clear_analysis_state()
     st.sidebar.success("✅ Sample data loaded!")
 
 if actual_file and budget_file:
-    st.session_state["actual_df"] = pd.read_csv(actual_file)
-    st.session_state["budget_df"] = pd.read_csv(budget_file)
-    _clear_analysis_state()
+    upload_sig = (_uploaded_file_signature(actual_file), _uploaded_file_signature(budget_file))
+    if st.session_state.get("data_signature") != upload_sig:
+        st.session_state["actual_df"] = pd.read_csv(actual_file)
+        st.session_state["budget_df"] = pd.read_csv(budget_file)
+        st.session_state["data_signature"] = upload_sig
+        _clear_analysis_state()
     st.sidebar.success("✅ Files uploaded!")
 
 if "actual_df" in st.session_state:
@@ -363,8 +375,10 @@ if run_btn:
         round(float(variance_df["budget_amount"].sum()), 2),
         int(anomaly_summary.get("total_anomalies", 0)),
     )
-    st.session_state["commentary_signature"] = signature
-    st.session_state["commentary"] = generate_commentary(variance_df, anomaly_summary, dept_df)
+
+    if st.session_state.get("commentary_signature") != signature:
+        st.session_state["commentary_signature"] = signature
+        st.session_state["commentary"] = generate_commentary(variance_df, anomaly_summary, dept_df)
 
 if st.session_state.get("analysis_ran", False):
     variance_df = st.session_state["variance_df"]
@@ -373,6 +387,7 @@ if st.session_state.get("analysis_ran", False):
     anomaly_summary = st.session_state["anomaly_summary"]
     risk_flags = st.session_state["risk_flags"]
     period_label = st.session_state["period_label"]
+    commentary = st.session_state.get("commentary", "")
 
     for msg in st.session_state.get("dq_messages", []):
         st.warning(f"⚠️ Data quality check: {msg}")
@@ -570,8 +585,6 @@ if st.session_state.get("analysis_ran", False):
     st.divider()
 
     st.markdown("### 🤖 AI-Generated Management Commentary")
-    commentary = st.session_state["commentary"]
-
     st.text_area(
         "Management Commentary",
         value=commentary,
