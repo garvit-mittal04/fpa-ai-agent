@@ -271,11 +271,13 @@ SAMPLE_BUDGET = os.path.join(BASE_DIR, "sample_data", "budget.csv")
 if use_sample:
     st.session_state["actual_df"] = pd.read_csv(SAMPLE_ACTUAL)
     st.session_state["budget_df"] = pd.read_csv(SAMPLE_BUDGET)
+    st.session_state["analysis_ran"] = False
     st.sidebar.success("✅ Sample data loaded!")
 
 if actual_file and budget_file:
     st.session_state["actual_df"] = pd.read_csv(actual_file)
     st.session_state["budget_df"] = pd.read_csv(budget_file)
+    st.session_state["analysis_ran"] = False
     st.sidebar.success("✅ Files uploaded!")
 
 if "actual_df" in st.session_state:
@@ -292,10 +294,14 @@ if "actual_df" in st.session_state:
         all_periods = sorted(st.session_state["actual_df"]["period"].astype(str).unique().tolist())
         period_options = ["All Periods"] + all_periods
 
+        default_index = len(period_options) - 1
+        if "selected_period" in st.session_state and st.session_state["selected_period"] in period_options:
+            default_index = period_options.index(st.session_state["selected_period"])
+
         selected_period = st.selectbox(
             "Select period",
             options=period_options,
-            index=len(period_options) - 1,
+            index=default_index,
             label_visibility="collapsed",
         )
 
@@ -335,11 +341,7 @@ if run_btn:
     budget_df = st.session_state["budget_df"].copy()
     selected_period = st.session_state.get("selected_period", "All Periods")
 
-    # Data quality check before filtering / processing
     dq_messages = _data_quality_messages(actual_df, budget_df)
-    if dq_messages:
-        for msg in dq_messages:
-            st.warning(f"⚠️ Data quality check: {msg}")
 
     if selected_period != "All Periods":
         actual_df = actual_df[actual_df["period"].astype(str) == selected_period]
@@ -350,7 +352,26 @@ if run_btn:
             actual_df, budget_df
         )
 
-    period_label = selected_period if selected_period != "All Periods" else "Full Dataset"
+    st.session_state["analysis_ran"] = True
+    st.session_state["variance_df"] = variance_df
+    st.session_state["dept_df"] = dept_df
+    st.session_state["trends_df"] = trends_df
+    st.session_state["anomaly_summary"] = anomaly_summary
+    st.session_state["risk_flags"] = risk_flags
+    st.session_state["period_label"] = selected_period if selected_period != "All Periods" else "Full Dataset"
+    st.session_state["dq_messages"] = dq_messages
+
+if st.session_state.get("analysis_ran", False):
+    variance_df = st.session_state["variance_df"]
+    dept_df = st.session_state["dept_df"]
+    trends_df = st.session_state["trends_df"]
+    anomaly_summary = st.session_state["anomaly_summary"]
+    risk_flags = st.session_state["risk_flags"]
+    period_label = st.session_state["period_label"]
+
+    for msg in st.session_state.get("dq_messages", []):
+        st.warning(f"⚠️ Data quality check: {msg}")
+
     contamination_pct = anomaly_summary.get("contamination_used", 10.0)
 
     st.markdown(
@@ -376,7 +397,6 @@ if run_btn:
     k3.metric("📊 Net Variance", f"${total_var:,.0f}", delta=f"{total_var_pct:+.2f}%")
     k4.metric("🔍 Anomalies Detected", anomaly_summary.get("total_anomalies", 0))
 
-    # System insight banner
     if anomaly_summary["total_anomalies"] == 0:
         st.success("🟢 System Insight: Dataset is stable — no statistically significant anomalies detected.")
     else:
@@ -524,14 +544,19 @@ if run_btn:
     else:
         st.success("🟢 No anomalies detected — system confirms stable financial performance.")
 
+        avg_var = anomaly_summary.get("mean_abs_variance_pct", variance_df["variance_pct"].abs().mean())
+        max_var = anomaly_summary.get("max_abs_variance_pct", variance_df["variance_pct"].abs().max())
+        std_var = anomaly_summary.get("std_variance_pct", variance_df["variance_pct"].std())
+        stability_reason = anomaly_summary.get("stability_reason", "Financial performance is within expected operating range.")
+
         st.markdown(
             f"""
         <div class="info-box">
             Stability Diagnostics:<br>
-            • Avg variance: <strong style="color:#f59e0b;">{variance_df['variance_pct'].abs().mean():.2f}%</strong><br>
-            • Max variance: <strong style="color:#f59e0b;">{variance_df['variance_pct'].abs().max():.2f}%</strong><br>
-            • Std deviation: <strong style="color:#f59e0b;">{variance_df['variance_pct'].std():.2f}%</strong><br><br>
-            Interpretation: Financial performance is within expected operating range.
+            • Avg variance: <strong style="color:#f59e0b;">{avg_var:.2f}%</strong><br>
+            • Max variance: <strong style="color:#f59e0b;">{max_var:.2f}%</strong><br>
+            • Std deviation: <strong style="color:#f59e0b;">{std_var:.2f}%</strong><br><br>
+            Interpretation: {stability_reason}
         </div>
         """,
             unsafe_allow_html=True,
@@ -540,59 +565,25 @@ if run_btn:
     st.divider()
 
     st.markdown("### 🤖 AI-Generated Management Commentary")
-    with st.spinner("✍️ Generating board-ready commentary..."):
-        commentary = generate_commentary(variance_df, anomaly_summary, dept_df)
+
+    commentary_key = f"commentary_{period_label}"
+    if commentary_key not in st.session_state:
+        with st.spinner("✍️ Generating board-ready commentary..."):
+            st.session_state[commentary_key] = generate_commentary(
+                variance_df, anomaly_summary, dept_df
+            )
+
+    commentary = st.session_state[commentary_key]
 
     st.text_area(
         "Management Commentary",
         value=commentary,
         height=320,
-        key="commentary_text",
+        key=f"commentary_text_{period_label}",
         label_visibility="collapsed",
     )
 
-    commentary_json = json.dumps(commentary)
-    components.html(
-        f"""
-        <div style="margin-top: 6px;">
-            <button
-                id="copy-btn"
-                style="
-                    background: linear-gradient(135deg, #1a2e45, #1e3a5f);
-                    color: #e2e8f0;
-                    border: 1px solid #2d4a6e;
-                    border-radius: 10px;
-                    padding: 10px 20px;
-                    font-size: 0.88rem;
-                    font-weight: 600;
-                    cursor: pointer;
-                    letter-spacing: 0.03em;
-                ">
-                📋 Copy Commentary
-            </button>
-        </div>
-
-        <script>
-            const btn = document.getElementById("copy-btn");
-            const textToCopy = {commentary_json};
-
-            btn.addEventListener("click", async function () {{
-                try {{
-                    await navigator.clipboard.writeText(textToCopy);
-                    btn.innerHTML = "✅ Copied to clipboard!";
-                    btn.style.background = "linear-gradient(135deg, #16a34a, #15803d)";
-                    setTimeout(() => {{
-                        btn.innerHTML = "📋 Copy Commentary";
-                        btn.style.background = "linear-gradient(135deg, #1a2e45, #1e3a5f)";
-                    }}, 2500);
-                }} catch (err) {{
-                    btn.innerHTML = "❌ Copy failed";
-                }}
-            }});
-        </script>
-        """,
-        height=60,
-    )
+    st.code(commentary, language=None)
 
     st.divider()
 
@@ -608,7 +599,7 @@ if run_btn:
 
     st.divider()
 
-    show_raw = st.checkbox("Show Raw Variance Data")
+    show_raw = st.checkbox("Show Raw Variance Data", key="show_raw_variance")
     if show_raw:
         st.dataframe(variance_df.head(1000), use_container_width=True, hide_index=True)
 
