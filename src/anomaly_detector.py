@@ -1,45 +1,19 @@
 """
 anomaly_detector.py
 -------------------
-Uses Isolation Forest (unsupervised ML) to flag statistically unusual
-line items in the variance dataset.
-
-Why Isolation Forest?
-- No labeled training data required — ideal for financial data where
-  "normal" varies by department and period.
-- Handles multivariate outliers across amount, budget, and variance features.
-
-Contamination scaling:
-- For small datasets (<500 rows)  : 10% — aggressive flagging, manageable count
-- For medium datasets (500–2000)  :  5% — balanced
-- For large datasets (2000–10000) :  3% — keeps flagged items actionable
-- For very large (>10000 rows)    :  2% — prevents overwhelming anomaly lists
-
-What counts as a good anomaly?
-- A line item where the combination of actual_amount, budget_amount,
-  variance_dollar, and variance_pct is statistically unusual relative
-  to the rest of the dataset.
-- Not just large variance — a $500K overspend in a $10M budget line
-  may be normal; the same in a $50K line is anomalous.
+Improved anomaly detection with "smart gating":
+- Avoids false anomalies on clean datasets
+- Uses Isolation Forest only when variance is meaningful
 """
 
 import pandas as pd
+import numpy as np
 from sklearn.ensemble import IsolationForest
 
 FEATURES = ["actual_amount", "budget_amount", "variance_dollar", "variance_pct"]
 
 
 def _auto_contamination(n_rows: int) -> float:
-    """
-    Return a contamination rate scaled to dataset size so the number of
-    flagged anomalies stays actionable regardless of how many rows are uploaded.
-
-    Size thresholds:
-        < 500 rows   → 10%  (small monthly dataset, flag broadly)
-        500–2000     →  5%  (standard monthly close)
-        2000–10000   →  3%  (multi-period or multi-department dataset)
-        > 10000      →  2%  (large historical dataset)
-    """
     if n_rows < 500:
         return 0.10
     elif n_rows < 2000:
@@ -50,54 +24,69 @@ def _auto_contamination(n_rows: int) -> float:
         return 0.02
 
 
+def _is_dataset_stable(df: pd.DataFrame) -> bool:
+    """
+    Detect if dataset is too stable (no real anomalies).
+
+    Criteria:
+    - Very low variance %
+    - No extreme outliers
+    """
+    if len(df) == 0:
+        return True
+
+    # Mean absolute variance %
+    mean_var = df["variance_pct"].abs().mean()
+
+    # Max variance %
+    max_var = df["variance_pct"].abs().max()
+
+    # Std deviation of variance
+    std_var = df["variance_pct"].std()
+
+    # Heuristics tuned for finance datasets
+    if mean_var < 2 and max_var < 5 and std_var < 2:
+        return True
+
+    return False
+
+
 def detect_anomalies(df: pd.DataFrame, contamination: float = None) -> pd.DataFrame:
-    """
-    Add is_anomaly (bool) and anomaly_score (float) columns to variance dataframe.
-
-    Parameters
-    ----------
-    df            : DataFrame with actual_amount, budget_amount, variance_dollar, variance_pct
-    contamination : expected proportion of anomalies.
-                    If None (default), rate is chosen automatically based on dataset size.
-
-    Returns
-    -------
-    DataFrame with two new columns: is_anomaly, anomaly_score
-    """
     df = df.copy()
 
     missing = [c for c in FEATURES if c not in df.columns]
     if missing:
         raise ValueError(f"Missing required columns for anomaly detection: {missing}")
 
-    # Auto-scale contamination if not explicitly provided
+    # 🔥 STEP 1: Check if dataset is stable
+    if _is_dataset_stable(df):
+        df["is_anomaly"] = False
+        df["anomaly_score"] = 0.0
+        df["contamination_used"] = 0.0
+        return df
+
+    # STEP 2: Normal anomaly detection
     if contamination is None:
         contamination = _auto_contamination(len(df))
 
     X = df[FEATURES].fillna(0).values
-    model = IsolationForest(contamination=contamination, random_state=42, n_jobs=-1)
+
+    model = IsolationForest(
+        contamination=contamination,
+        random_state=42,
+        n_jobs=-1
+    )
+
     preds = model.fit_predict(X)
 
-    df["is_anomaly"] = preds == -1                         # -1 = anomaly, 1 = normal
-    df["anomaly_score"] = model.decision_function(X)       # lower = more anomalous
-    df["contamination_used"] = round(contamination * 100, 1)   # surfaced for UI transparency
+    df["is_anomaly"] = preds == -1
+    df["anomaly_score"] = model.decision_function(X)
+    df["contamination_used"] = round(contamination * 100, 1)
 
     return df
 
 
 def get_anomaly_summary(df: pd.DataFrame) -> dict:
-    """
-    Return a summary dict with a stable contract used by app.py and commentary_agent.py.
-
-    Keys
-    ----
-    total_anomalies      : int   — count of flagged rows
-    departments_affected : list  — departments with at least one anomaly
-    anomaly_rate         : float — anomalies / total rows * 100
-    top_anomalies        : list  — top 3 anomalies [{department, line_item,
-                                    variance_dollar, variance_pct}]
-    contamination_used   : float — contamination % actually applied (for display)
-    """
     if "is_anomaly" not in df.columns:
         return {
             "total_anomalies": 0,
@@ -112,7 +101,6 @@ def get_anomaly_summary(df: pd.DataFrame) -> dict:
     departments = sorted(anomalies["department"].unique().tolist()) if total > 0 else []
     rate = round(total / len(df) * 100, 1) if len(df) > 0 else 0.0
 
-    # Pull contamination_used from the df if available
     contamination_used = float(df["contamination_used"].iloc[0]) if "contamination_used" in df.columns else 0.0
 
     top = []
@@ -120,6 +108,7 @@ def get_anomaly_summary(df: pd.DataFrame) -> dict:
         top_rows = anomalies.reindex(
             anomalies["variance_dollar"].abs().sort_values(ascending=False).index
         ).head(3)
+
         for _, row in top_rows.iterrows():
             top.append({
                 "department": row.get("department", ""),
