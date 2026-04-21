@@ -1,12 +1,10 @@
 import os
 import sys
-import json
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(BASE_DIR, "src"))
 
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 import plotly.graph_objects as go
 from dotenv import load_dotenv
@@ -112,20 +110,6 @@ div[data-testid="stDataFrame"] {
     transform: translateY(-1px) !important;
 }
 
-.stButton > button[kind="secondary"] {
-    background: #1a2234 !important;
-    color: #e2e8f0 !important;
-    border: 1px solid #2d3f55 !important;
-    border-radius: 12px !important;
-    font-weight: 500 !important;
-    transition: all 0.2s ease !important;
-}
-
-.stButton > button[kind="secondary"]:hover {
-    background: #243048 !important;
-    border-color: #3d5a80 !important;
-}
-
 h1 {
     color: #f1f5f9 !important;
     letter-spacing: -0.5px;
@@ -198,10 +182,6 @@ hr {
 
 @st.cache_data(show_spinner=False)
 def run_pipeline(actual_df: pd.DataFrame, budget_df: pd.DataFrame):
-    """
-    Run the full analysis pipeline and cache results by dataframe content.
-    Re-runs only when the underlying data changes, not on every page interaction.
-    """
     load_csv_to_db(actual_df, budget_df)
     variance_df = get_variance_analysis()
     dept_df = get_department_summary()
@@ -214,18 +194,33 @@ def run_pipeline(actual_df: pd.DataFrame, budget_df: pd.DataFrame):
 
 def _data_quality_messages(actual_df: pd.DataFrame, budget_df: pd.DataFrame):
     messages = []
-
     if actual_df.isnull().sum().sum() > 0:
         messages.append("Actuals file contains missing values.")
     if budget_df.isnull().sum().sum() > 0:
         messages.append("Budget file contains missing values.")
-
     if len(actual_df) == 0:
         messages.append("Actuals file has no rows.")
     if len(budget_df) == 0:
         messages.append("Budget file has no rows.")
-
     return messages
+
+
+def _clear_analysis_state():
+    keys_to_clear = [
+        "analysis_ran",
+        "variance_df",
+        "dept_df",
+        "trends_df",
+        "anomaly_summary",
+        "risk_flags",
+        "period_label",
+        "dq_messages",
+        "commentary",
+        "commentary_signature",
+    ]
+    for key in keys_to_clear:
+        if key in st.session_state:
+            del st.session_state[key]
 
 
 st.markdown(
@@ -271,13 +266,13 @@ SAMPLE_BUDGET = os.path.join(BASE_DIR, "sample_data", "budget.csv")
 if use_sample:
     st.session_state["actual_df"] = pd.read_csv(SAMPLE_ACTUAL)
     st.session_state["budget_df"] = pd.read_csv(SAMPLE_BUDGET)
-    st.session_state["analysis_ran"] = False
+    _clear_analysis_state()
     st.sidebar.success("✅ Sample data loaded!")
 
 if actual_file and budget_file:
     st.session_state["actual_df"] = pd.read_csv(actual_file)
     st.session_state["budget_df"] = pd.read_csv(budget_file)
-    st.session_state["analysis_ran"] = False
+    _clear_analysis_state()
     st.sidebar.success("✅ Files uploaded!")
 
 if "actual_df" in st.session_state:
@@ -360,6 +355,16 @@ if run_btn:
     st.session_state["risk_flags"] = risk_flags
     st.session_state["period_label"] = selected_period if selected_period != "All Periods" else "Full Dataset"
     st.session_state["dq_messages"] = dq_messages
+
+    signature = (
+        st.session_state["period_label"],
+        len(variance_df),
+        round(float(variance_df["actual_amount"].sum()), 2),
+        round(float(variance_df["budget_amount"].sum()), 2),
+        int(anomaly_summary.get("total_anomalies", 0)),
+    )
+    st.session_state["commentary_signature"] = signature
+    st.session_state["commentary"] = generate_commentary(variance_df, anomaly_summary, dept_df)
 
 if st.session_state.get("analysis_ran", False):
     variance_df = st.session_state["variance_df"]
@@ -565,15 +570,7 @@ if st.session_state.get("analysis_ran", False):
     st.divider()
 
     st.markdown("### 🤖 AI-Generated Management Commentary")
-
-    commentary_key = f"commentary_{period_label}"
-    if commentary_key not in st.session_state:
-        with st.spinner("✍️ Generating board-ready commentary..."):
-            st.session_state[commentary_key] = generate_commentary(
-                variance_df, anomaly_summary, dept_df
-            )
-
-    commentary = st.session_state[commentary_key]
+    commentary = st.session_state["commentary"]
 
     st.text_area(
         "Management Commentary",
@@ -582,8 +579,6 @@ if st.session_state.get("analysis_ran", False):
         key=f"commentary_text_{period_label}",
         label_visibility="collapsed",
     )
-
-    st.code(commentary, language=None)
 
     st.divider()
 
