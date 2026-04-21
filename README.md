@@ -1,104 +1,187 @@
 # 📊 FP&A AI Analyst Agent
 
-An end-to-end financial analytics system that automates variance analysis, anomaly detection, and management commentary — transforming traditional FP&A workflows into real-time decision systems.
+An end-to-end financial analytics system that automates variance analysis, anomaly detection, and management commentary — transforming traditional FP&A workflows into a real-time decision system.
 
 ---
 
 ## 🚀 Live Application
-https://fpa-ai-agent-garvit.streamlit.app  
+🔗 https://fpa-ai-agent-garvit.streamlit.app  
+
+## 📂 GitHub Repository
+🔗 https://github.com/garvit-mittal04/fpa-ai-agent  
 
 ---
 
 ## 📌 Project Overview
 
-Most FP&A workflows today still rely on:
+Most FP&A workflows today are still:
 - Manual Excel-based variance analysis  
-- Static reports with limited insight  
-- Time-consuming commentary writing  
+- Static reporting with limited insight  
+- Time-consuming management commentary  
 
-This project builds an AI-powered FP&A analyst that automates the full workflow:
+This project builds an **AI-powered FP&A Analyst** that automates the entire workflow:
 
-Data → Variance → Anomalies → Risks → Commentary → Report
+📊 Data Ingestion → 🧮 Variance Analysis → 🔍 Anomaly Detection → ⚠️ Risk Flags → 🤖 AI Commentary → 📥 Export Report  
 
 ---
 
 ## ⚙️ Core Features
 
-### Variance Engine
-- SQL-based Actual vs Budget comparison  
-- FULL OUTER JOIN logic (no data loss)  
-- Department & line-item analysis  
-
-### Anomaly Detection
-- Isolation Forest (ML)  
-- Adaptive sensitivity  
-- No false positives on stable datasets  
-
-### Risk Flags
-- Highlights high-impact deviations  
-
-### AI Commentary
-- Board-ready financial insights  
-- Focused, structured, non-generic  
-
-### Dashboard
-- KPI cards  
-- Department table  
-- Waterfall chart  
-- Trend analysis  
-- Anomaly table  
-
-### Export
-- Excel report with summary + details + commentary  
+### 📊 Variance Analysis Engine
+- SQL-based aggregation of Actual vs Budget  
+- FULL OUTER JOIN logic ensures **no data loss**  
+- Handles real-world cases like missing actuals or budget-only entries  
+- Department-level and line-item-level breakdown  
 
 ---
 
-## 📈 Impact
+### 🔍 ML-Based Anomaly Detection
+- Uses Isolation Forest (unsupervised ML)  
+- Adaptive contamination levels based on dataset size  
+- Smart gating logic avoids false positives on stable datasets  
+- Identifies statistically unusual financial behavior  
 
-- Hours → Minutes (analysis time)  
-- 10,000+ records handled  
-- Automated reporting  
+---
+
+### ⚠️ Risk Flagging System
+- Flags high-impact deviations  
+- Highlights business-critical risks  
+- Supports decision-making for leadership  
+
+---
+
+### 🤖 AI-Generated Management Commentary
+- Automatically generates **board-ready financial narratives**  
+- Focuses on:
+  - Key drivers of variance  
+  - Anomalies  
+  - Department-level performance  
+- Designed to mimic real FP&A reporting (not generic AI text)  
+
+---
+
+### 📈 Interactive Dashboard (Streamlit)
+- KPI Cards (Actual, Budget, Variance, Anomalies)  
+- Department Summary Table  
+- Variance Waterfall Chart  
+- Rolling Trend Analysis  
+- Anomaly Inspection Panel  
+- Period-based filtering  
+
+---
+
+### 📥 Automated Excel Reporting
+- Generates a 3-sheet report:
+  1. Executive Summary  
+  2. Variance Detail  
+  3. AI Commentary  
+- Styled and formatted for business use  
+
+---
+
+## 📈 Business Impact
+
+- Reduced financial analysis time from **hours → minutes**  
+- Scaled analysis across **10,000+ records**  
+- Automated executive-level reporting  
+- Improved anomaly detection with reduced noise  
 
 ---
 
 ## 🛠️ Tech Stack
 
-Python, SQL, Streamlit, Scikit-learn, Plotly, OpenPyXL, LLMs
+- **Python** — Data processing & orchestration  
+- **SQL (SQLite)** — Variance computation engine  
+- **Scikit-learn** — ML anomaly detection (Isolation Forest)  
+- **Streamlit** — Interactive UI  
+- **Plotly** — Data visualization  
+- **OpenPyXL** — Excel report generation  
+- **LLMs** — AI-generated commentary  
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ System Architecture
 
-CSV → SQL → ML → Risk → AI → Dashboard
+```
+CSV Input
+   ↓
+SQL Engine (Variance Computation)
+   ↓
+ML Layer (Anomaly Detection)
+   ↓
+Risk Flag Generator
+   ↓
+AI Commentary Engine
+   ↓
+Streamlit Dashboard + Excel Report
+```
 
 ---
 
-## ▶️ Run Locally
+## 📂 Project Structure
+
+```
+fpa-ai-agent/
+│
+├── app.py                  # Main Streamlit application
+├── src/
+│   ├── sql_engine.py       # SQL-based variance engine
+│   ├── anomaly_detector.py # ML anomaly detection logic
+│   ├── commentary_agent.py # AI commentary generator
+│   └── report_generator.py # Excel report builder
+│
+├── sample_data/            # Sample datasets
+├── outputs/                # Generated reports
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## ▶️ How to Run Locally
 
 ```bash
 git clone https://github.com/garvit-mittal04/fpa-ai-agent.git
 cd fpa-ai-agent
+
 pip install -r requirements.txt
+
 streamlit run app.py
 ```
 
 ---
 
-## 📂 Structure
 
-```
-app.py
-src/
-  sql_engine.py
-  anomaly_detector.py
-  commentary_agent.py
-  report_generator.py
-sample_data/
-outputs/
-```
+## 🧠 Key Highlights
+
+- Built to simulate **real-world FP&A workflows**, not just visualization  
+- Combines **SQL + Machine Learning + AI** into one decision system  
+- Handles real financial edge cases:
+  - Missing actuals  
+  - Budget-only entries  
+  - Stable datasets with no anomalies  
 
 ---
 
-## 🤝 Feedback
+## 🎯 Use Cases
 
-Open to feedback from FP&A, finance, and analytics professionals.
+- FP&A teams  
+- Financial analysts  
+- Business analysts  
+- Operations & supply chain analysis  
+
+---
+
+## 🤝 Feedback & Contributions
+
+Open to feedback from:
+- FP&A professionals  
+- Finance leaders  
+- Data & analytics experts  
+
+---
+
+## 📬 Connect
+
+🔗 GitHub: https://github.com/garvit-mittal04  
+🔗 LinkedIn: https://www.linkedin.com/in/garvit-mittal04/
