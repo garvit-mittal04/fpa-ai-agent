@@ -188,6 +188,7 @@ Add `.env`:
 GROQ_API_KEY=your_key_here
 
 Run app:
+
 streamlit run app.py
 
 ---
