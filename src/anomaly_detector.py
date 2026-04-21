@@ -8,8 +8,12 @@ Why Isolation Forest?
 - No labeled training data required — ideal for financial data where
   "normal" varies by department and period.
 - Handles multivariate outliers across amount, budget, and variance features.
-- contamination=0.1 means ~10% of records are expected to be anomalous,
-  which is a reasonable prior for a monthly close dataset.
+
+Contamination scaling:
+- For small datasets (<500 rows)  : 10% — aggressive flagging, manageable count
+- For medium datasets (500–2000)  :  5% — balanced
+- For large datasets (2000–10000) :  3% — keeps flagged items actionable
+- For very large (>10000 rows)    :  2% — prevents overwhelming anomaly lists
 
 What counts as a good anomaly?
 - A line item where the combination of actual_amount, budget_amount,
@@ -25,14 +29,36 @@ from sklearn.ensemble import IsolationForest
 FEATURES = ["actual_amount", "budget_amount", "variance_dollar", "variance_pct"]
 
 
-def detect_anomalies(df: pd.DataFrame, contamination: float = 0.1) -> pd.DataFrame:
+def _auto_contamination(n_rows: int) -> float:
+    """
+    Return a contamination rate scaled to dataset size so the number of
+    flagged anomalies stays actionable regardless of how many rows are uploaded.
+
+    Size thresholds:
+        < 500 rows   → 10%  (small monthly dataset, flag broadly)
+        500–2000     →  5%  (standard monthly close)
+        2000–10000   →  3%  (multi-period or multi-department dataset)
+        > 10000      →  2%  (large historical dataset)
+    """
+    if n_rows < 500:
+        return 0.10
+    elif n_rows < 2000:
+        return 0.05
+    elif n_rows < 10000:
+        return 0.03
+    else:
+        return 0.02
+
+
+def detect_anomalies(df: pd.DataFrame, contamination: float = None) -> pd.DataFrame:
     """
     Add is_anomaly (bool) and anomaly_score (float) columns to variance dataframe.
 
     Parameters
     ----------
     df            : DataFrame with actual_amount, budget_amount, variance_dollar, variance_pct
-    contamination : expected proportion of anomalies (default 0.1 = 10%)
+    contamination : expected proportion of anomalies.
+                    If None (default), rate is chosen automatically based on dataset size.
 
     Returns
     -------
@@ -44,12 +70,17 @@ def detect_anomalies(df: pd.DataFrame, contamination: float = 0.1) -> pd.DataFra
     if missing:
         raise ValueError(f"Missing required columns for anomaly detection: {missing}")
 
+    # Auto-scale contamination if not explicitly provided
+    if contamination is None:
+        contamination = _auto_contamination(len(df))
+
     X = df[FEATURES].fillna(0).values
     model = IsolationForest(contamination=contamination, random_state=42, n_jobs=-1)
     preds = model.fit_predict(X)
 
-    df["is_anomaly"] = preds == -1          # -1 = anomaly, 1 = normal
-    df["anomaly_score"] = model.decision_function(X)   # lower = more anomalous
+    df["is_anomaly"] = preds == -1                         # -1 = anomaly, 1 = normal
+    df["anomaly_score"] = model.decision_function(X)       # lower = more anomalous
+    df["contamination_used"] = round(contamination * 100, 1)   # surfaced for UI transparency
 
     return df
 
@@ -65,6 +96,7 @@ def get_anomaly_summary(df: pd.DataFrame) -> dict:
     anomaly_rate         : float — anomalies / total rows * 100
     top_anomalies        : list  — top 3 anomalies [{department, line_item,
                                     variance_dollar, variance_pct}]
+    contamination_used   : float — contamination % actually applied (for display)
     """
     if "is_anomaly" not in df.columns:
         return {
@@ -72,12 +104,16 @@ def get_anomaly_summary(df: pd.DataFrame) -> dict:
             "departments_affected": [],
             "anomaly_rate": 0.0,
             "top_anomalies": [],
+            "contamination_used": 0.0,
         }
 
     anomalies = df[df["is_anomaly"] == True]
     total = int(len(anomalies))
     departments = sorted(anomalies["department"].unique().tolist()) if total > 0 else []
     rate = round(total / len(df) * 100, 1) if len(df) > 0 else 0.0
+
+    # Pull contamination_used from the df if available
+    contamination_used = float(df["contamination_used"].iloc[0]) if "contamination_used" in df.columns else 0.0
 
     top = []
     if total > 0:
@@ -97,4 +133,5 @@ def get_anomaly_summary(df: pd.DataFrame) -> dict:
         "departments_affected": departments,
         "anomaly_rate": rate,
         "top_anomalies": top,
+        "contamination_used": contamination_used,
     }
