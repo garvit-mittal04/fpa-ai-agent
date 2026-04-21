@@ -184,6 +184,7 @@ Install dependencies:
 pip install -r requirements.txt
 
 Add `.env`:
+
 GROQ_API_KEY=your_key_here
 
 Run app:
