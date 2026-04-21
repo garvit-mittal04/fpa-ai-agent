@@ -212,6 +212,22 @@ def run_pipeline(actual_df: pd.DataFrame, budget_df: pd.DataFrame):
     return variance_df, dept_df, trends_df, anomaly_summary, risk_flags
 
 
+def _data_quality_messages(actual_df: pd.DataFrame, budget_df: pd.DataFrame):
+    messages = []
+
+    if actual_df.isnull().sum().sum() > 0:
+        messages.append("Actuals file contains missing values.")
+    if budget_df.isnull().sum().sum() > 0:
+        messages.append("Budget file contains missing values.")
+
+    if len(actual_df) == 0:
+        messages.append("Actuals file has no rows.")
+    if len(budget_df) == 0:
+        messages.append("Budget file has no rows.")
+
+    return messages
+
+
 st.markdown(
     """
 <div style="padding: 8px 0 20px 0;">
@@ -273,7 +289,7 @@ if "actual_df" in st.session_state:
             unsafe_allow_html=True,
         )
 
-        all_periods = sorted(st.session_state["actual_df"]["period"].unique().tolist())
+        all_periods = sorted(st.session_state["actual_df"]["period"].astype(str).unique().tolist())
         period_options = ["All Periods"] + all_periods
 
         selected_period = st.selectbox(
@@ -319,9 +335,15 @@ if run_btn:
     budget_df = st.session_state["budget_df"].copy()
     selected_period = st.session_state.get("selected_period", "All Periods")
 
+    # Data quality check before filtering / processing
+    dq_messages = _data_quality_messages(actual_df, budget_df)
+    if dq_messages:
+        for msg in dq_messages:
+            st.warning(f"⚠️ Data quality check: {msg}")
+
     if selected_period != "All Periods":
-        actual_df = actual_df[actual_df["period"] == selected_period]
-        budget_df = budget_df[budget_df["period"] == selected_period]
+        actual_df = actual_df[actual_df["period"].astype(str) == selected_period]
+        budget_df = budget_df[budget_df["period"].astype(str) == selected_period]
 
     with st.spinner("⚙️ Running analysis pipeline..."):
         variance_df, dept_df, trends_df, anomaly_summary, risk_flags = run_pipeline(
@@ -354,6 +376,12 @@ if run_btn:
     k3.metric("📊 Net Variance", f"${total_var:,.0f}", delta=f"{total_var_pct:+.2f}%")
     k4.metric("🔍 Anomalies Detected", anomaly_summary.get("total_anomalies", 0))
 
+    # System insight banner
+    if anomaly_summary["total_anomalies"] == 0:
+        st.success("🟢 System Insight: Dataset is stable — no statistically significant anomalies detected.")
+    else:
+        st.error(f"🔴 System Insight: {anomaly_summary['total_anomalies']} anomalies detected — investigation required.")
+
     st.divider()
 
     col_left, col_right = st.columns([1.1, 0.9])
@@ -377,10 +405,10 @@ if run_btn:
     with col_right:
         st.markdown("### ⚠️ Risk Flags")
         if risk_flags:
-            for flag in risk_flags:
-                st.warning(flag)
+            for i, flag in enumerate(risk_flags, 1):
+                st.warning(f"{i}. {flag}")
         else:
-            st.success("✅ No items exceed 10% variance threshold.")
+            st.success("✅ No material leadership risk flags identified.")
 
     st.divider()
 
@@ -494,7 +522,20 @@ if run_btn:
                 f"Showing top 500 of {len(anomaly_df)} anomalies. Download the Excel report for the full list."
             )
     else:
-        st.success("✅ No anomalies detected.")
+        st.success("🟢 No anomalies detected — system confirms stable financial performance.")
+
+        st.markdown(
+            f"""
+        <div class="info-box">
+            Stability Diagnostics:<br>
+            • Avg variance: <strong style="color:#f59e0b;">{variance_df['variance_pct'].abs().mean():.2f}%</strong><br>
+            • Max variance: <strong style="color:#f59e0b;">{variance_df['variance_pct'].abs().max():.2f}%</strong><br>
+            • Std deviation: <strong style="color:#f59e0b;">{variance_df['variance_pct'].std():.2f}%</strong><br><br>
+            Interpretation: Financial performance is within expected operating range.
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
 
     st.divider()
 
@@ -552,6 +593,24 @@ if run_btn:
         """,
         height=60,
     )
+
+    st.divider()
+
+    st.markdown("### 🎯 Recommended Actions")
+    if anomaly_summary["total_anomalies"] > 0:
+        st.warning(
+            "Investigate high-variance line items and validate whether deviations are structural, timing-related, or one-time in nature."
+        )
+    else:
+        st.success(
+            "Maintain current performance — no immediate corrective action is required based on the uploaded dataset."
+        )
+
+    st.divider()
+
+    show_raw = st.checkbox("Show Raw Variance Data")
+    if show_raw:
+        st.dataframe(variance_df.head(1000), use_container_width=True, hide_index=True)
 
     st.divider()
 
