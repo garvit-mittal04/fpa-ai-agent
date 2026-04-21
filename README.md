@@ -313,6 +313,7 @@ BBA (Finance) — Christ University
 
 🔗 **GitHub:** https://github.com/garvit-mittal04  
 🔗 **LinkedIn:** https://www.linkedin.com/in/garvit-mittal04/
+🔗 **Portfolio:** [https://www.garvitmittal.com](https://garvitmittal.com)
 
 ---
 
