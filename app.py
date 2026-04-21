@@ -365,7 +365,9 @@ if run_btn:
     st.session_state["trends_df"] = trends_df
     st.session_state["anomaly_summary"] = anomaly_summary
     st.session_state["risk_flags"] = risk_flags
-    st.session_state["period_label"] = selected_period if selected_period != "All Periods" else "Full Dataset"
+    st.session_state["period_label"] = (
+        selected_period if selected_period != "All Periods" else "Full Dataset"
+    )
     st.session_state["dq_messages"] = dq_messages
 
     signature = (
@@ -378,7 +380,9 @@ if run_btn:
 
     if st.session_state.get("commentary_signature") != signature:
         st.session_state["commentary_signature"] = signature
-        st.session_state["commentary"] = generate_commentary(variance_df, anomaly_summary, dept_df)
+        st.session_state["commentary"] = generate_commentary(
+            variance_df, anomaly_summary, dept_df
+        )
 
 if st.session_state.get("analysis_ran", False):
     variance_df = st.session_state["variance_df"]
@@ -567,7 +571,10 @@ if st.session_state.get("analysis_ran", False):
         avg_var = anomaly_summary.get("mean_abs_variance_pct", variance_df["variance_pct"].abs().mean())
         max_var = anomaly_summary.get("max_abs_variance_pct", variance_df["variance_pct"].abs().max())
         std_var = anomaly_summary.get("std_variance_pct", variance_df["variance_pct"].std())
-        stability_reason = anomaly_summary.get("stability_reason", "Financial performance is within expected operating range.")
+        stability_reason = anomaly_summary.get(
+            "stability_reason",
+            "Financial performance is within expected operating range."
+        )
 
         st.markdown(
             f"""
@@ -591,6 +598,13 @@ if st.session_state.get("analysis_ran", False):
         height=320,
         key=f"commentary_text_{period_label}",
         label_visibility="collapsed",
+    )
+
+    st.download_button(
+        label="📋 Download Commentary as TXT",
+        data=commentary,
+        file_name=f"management_commentary_{period_label.replace(' ', '_')}.txt",
+        mime="text/plain",
     )
 
     st.divider()
