@@ -15,6 +15,7 @@ Fallback behaviour:
 """
 
 import os
+import re
 from groq import Groq
 from dotenv import load_dotenv
 
@@ -29,6 +30,16 @@ def _get_client() -> Groq:
             "GROQ_API_KEY is not set. Add it to your .env file or Streamlit secrets."
         )
     return Groq(api_key=api_key)
+
+
+def _clean_commentary(text: str) -> str:
+    """
+    Post-process LLM output to fix common formatting issues.
+    - Replaces backtick-number patterns (e.g. `140,801) with proper $ sign ($140,801)
+    - Strips leading/trailing whitespace
+    """
+    text = re.sub(r'`(-?\d)', r'$\1', text)
+    return text.strip()
 
 
 def generate_commentary(variance_df, anomaly_summary: dict, dept_summary_df) -> str:
@@ -51,13 +62,11 @@ def generate_commentary(variance_df, anomaly_summary: dict, dept_summary_df) -> 
         f"${r['variance_dollar']:,.0f} ({r['variance_pct']:+.1f}%)"
         for _, r in top_unfavorable.iterrows()
     ])
-
     fav_text = "\n".join([
         f"- {r['department']} | {r['line_item']} | "
         f"${r['variance_dollar']:,.0f} ({r['variance_pct']:+.1f}%)"
         for _, r in top_favorable.iterrows()
     ])
-
     dept_text = "\n".join([
         f"- {r.iloc[0]}: Actual ${r.iloc[1]:,.0f} vs Budget "
         f"${r.iloc[2]:,.0f} ({r.iloc[4]:+.1f}%)"
@@ -69,7 +78,6 @@ def generate_commentary(variance_df, anomaly_summary: dict, dept_summary_df) -> 
     total_var     = total_actual - total_budget
     total_var_pct = (total_var / total_budget * 100) if total_budget != 0 else 0
 
-    # Use stable contract keys from get_anomaly_summary()
     anomaly_count = anomaly_summary.get("total_anomalies", 0)
     anomaly_depts = anomaly_summary.get("departments_affected", [])
 
@@ -100,6 +108,7 @@ Write a concise management commentary (3-4 paragraphs) that:
 4. Provides forward-looking context for next month
 
 Tone: professional, direct, board-ready. Avoid jargon. Do not use bullet points.
+Always write dollar amounts using the $ symbol (e.g. $140,801) — never use backticks.
 """
 
     try:
@@ -108,7 +117,9 @@ Tone: professional, direct, board-ready. Avoid jargon. Do not use bullet points.
             messages=[{"role": "user", "content": prompt}],
             max_tokens=1024,
         )
-        return response.choices[0].message.content
+        commentary = response.choices[0].message.content
+        return _clean_commentary(commentary)
+
     except Exception as e:
         return (
             "⚠️ Commentary generation failed. Please check your API key and try again.\n"
@@ -150,6 +161,7 @@ High Variance Items:
 {items_text}
 
 Format each risk flag as a single sentence starting with the department name.
+Always write dollar amounts using the $ symbol — never use backticks.
 """
 
     try:
@@ -161,6 +173,7 @@ Format each risk flag as a single sentence starting with the department name.
         raw   = response.choices[0].message.content
         flags = [ln.strip("- •").strip() for ln in raw.strip().split("\n") if ln.strip()]
         return flags if flags else _rule_based_flags(high_variance)
+
     except Exception:
         return _rule_based_flags(high_variance)
 
