@@ -13,7 +13,6 @@
 ## 🚀 Live Application
 
 🔗 **Demo:** https://fpa-ai-agent-garvit.streamlit.app  
-🔗 **Repository:** https://github.com/garvit-mittal04/fpa-ai-agent
 
 ---
 
