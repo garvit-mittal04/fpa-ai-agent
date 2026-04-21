@@ -443,12 +443,13 @@ if run_btn:
     with st.spinner("✍️ Generating board-ready commentary..."):
         commentary = generate_commentary(variance_df, anomaly_summary, dept_df)
 
+    safe_commentary = commentary.replace('$', '&#36;')
     st.markdown(f"""
     <div style="background: linear-gradient(135deg, #0f1825, #111d2e);
         border: 1px solid #1e3a5f; border-left: 4px solid #f59e0b;
         border-radius: 14px; padding: 24px; line-height: 1.9;
         color: #cbd5e1; font-size: 0.95rem; white-space: pre-wrap;">
-{commentary}
+{safe_commentary}
     </div>
     """, unsafe_allow_html=True)
 
