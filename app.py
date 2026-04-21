@@ -217,10 +217,25 @@ def _clear_analysis_state():
         "dq_messages",
         "commentary",
         "commentary_signature",
+        "show_raw_variance",
     ]
     for key in keys_to_clear:
         if key in st.session_state:
             del st.session_state[key]
+
+
+def _clear_all_data_state():
+    keys_to_clear = [
+        "actual_df",
+        "budget_df",
+        "data_signature",
+        "data_source",
+        "selected_period",
+    ]
+    for key in keys_to_clear:
+        if key in st.session_state:
+            del st.session_state[key]
+    _clear_analysis_state()
 
 
 def _uploaded_file_signature(file):
@@ -275,17 +290,23 @@ if use_sample:
         st.session_state["actual_df"] = pd.read_csv(SAMPLE_ACTUAL)
         st.session_state["budget_df"] = pd.read_csv(SAMPLE_BUDGET)
         st.session_state["data_signature"] = sample_sig
+        st.session_state["data_source"] = "sample"
         _clear_analysis_state()
     st.sidebar.success("✅ Sample data loaded!")
 
 if actual_file and budget_file:
     upload_sig = (_uploaded_file_signature(actual_file), _uploaded_file_signature(budget_file))
-    if st.session_state.get("data_signature") != upload_sig:
+    if st.session_state.get("data_signature") != upload_sig or st.session_state.get("data_source") != "upload":
         st.session_state["actual_df"] = pd.read_csv(actual_file)
         st.session_state["budget_df"] = pd.read_csv(budget_file)
         st.session_state["data_signature"] = upload_sig
+        st.session_state["data_source"] = "upload"
         _clear_analysis_state()
     st.sidebar.success("✅ Files uploaded!")
+
+# Clear everything if uploaded files are removed after an upload-based session
+if st.session_state.get("data_source") == "upload" and (actual_file is None or budget_file is None):
+    _clear_all_data_state()
 
 if "actual_df" in st.session_state:
     with st.sidebar:
