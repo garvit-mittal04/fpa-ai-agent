@@ -106,41 +106,41 @@ Click **Load Sample Data → Run Analysis**
 
 ---
 
-## 🗄️ Core SQL Logic
+## 🗄️ Core SQL Logic  
 
 WITH actuals AS (
-SELECT department, line_item, period, SUM(amount) AS actual_amount
-FROM financial_data
-WHERE data_type = 'actual'
-GROUP BY department, line_item, period
+    SELECT department, line_item, period, SUM(amount) AS actual_amount
+    FROM financial_data
+    WHERE data_type = 'actual'
+    GROUP BY department, line_item, period
 ),
 budget AS (
-SELECT department, line_item, period, SUM(amount) AS budget_amount
-FROM financial_data
-WHERE data_type = 'budget'
-GROUP BY department, line_item, period
+    SELECT department, line_item, period, SUM(amount) AS budget_amount
+    FROM financial_data
+    WHERE data_type = 'budget'
+    GROUP BY department, line_item, period
 ),
 all_keys AS (
-SELECT department, line_item, period FROM actuals
-UNION
-SELECT department, line_item, period FROM budget
+    SELECT department, line_item, period FROM actuals
+    UNION
+    SELECT department, line_item, period FROM budget
 )
 SELECT
-k.department,
-k.line_item,
-k.period,
-COALESCE(a.actual_amount, 0) AS actual_amount,
-COALESCE(b.budget_amount, 0) AS budget_amount,
-COALESCE(a.actual_amount, 0) - COALESCE(b.budget_amount, 0) AS variance_dollar
+    k.department,
+    k.line_item,
+    k.period,
+    COALESCE(a.actual_amount, 0) AS actual_amount,
+    COALESCE(b.budget_amount, 0) AS budget_amount,
+    COALESCE(a.actual_amount, 0) - COALESCE(b.budget_amount, 0) AS variance_dollar
 FROM all_keys k
 LEFT JOIN actuals a
-ON k.department = a.department
-AND k.line_item = a.line_item
-AND k.period = a.period
+    ON k.department = a.department
+   AND k.line_item = a.line_item
+   AND k.period = a.period
 LEFT JOIN budget b
-ON k.department = b.department
-AND k.line_item = b.line_item
-AND k.period = b.period
+    ON k.department = b.department
+   AND k.line_item = b.line_item
+   AND k.period = b.period
 ORDER BY ABS(variance_dollar) DESC;
 
 ---
@@ -160,10 +160,10 @@ fpa-ai-agent/
 │
 ├── app.py
 ├── src/
-│ ├── sql_engine.py
-│ ├── anomaly_detector.py
-│ ├── commentary_agent.py
-│ └── report_generator.py
+│   ├── sql_engine.py
+│   ├── anomaly_detector.py
+│   ├── commentary_agent.py
+│   └── report_generator.py
 │
 ├── database/
 ├── sample_data/
@@ -176,7 +176,6 @@ fpa-ai-agent/
 ## ⚙️ Run Locally  
 
 Clone repo:
-
 git clone https://github.com/garvit-mittal04/fpa-ai-agent.git
 cd fpa-ai-agent
 
@@ -184,11 +183,9 @@ Install dependencies:
 pip install -r requirements.txt
 
 Add `.env`:
-
 GROQ_API_KEY=your_key_here
 
 Run app:
-
 streamlit run app.py
 
 ---
