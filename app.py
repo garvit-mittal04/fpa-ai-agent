@@ -27,7 +27,6 @@ st.set_page_config(page_title="FP&A AI Agent", page_icon="📊", layout="wide")
 st.markdown(
     """
 <style>
-/* Global */
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif;
 }
@@ -44,7 +43,6 @@ html, body, [class*="css"] {
     color: #e2e8f0 !important;
 }
 
-/* Metric cards */
 [data-testid="metric-container"] {
     background: linear-gradient(135deg, #111827 0%, #1a2234 100%);
     border: 1px solid #1e3a5f;
@@ -77,14 +75,12 @@ html, body, [class*="css"] {
     letter-spacing: 0.08em;
 }
 
-/* Dataframes */
 div[data-testid="stDataFrame"] {
     border: 1px solid #1e2d40;
     border-radius: 14px;
     overflow: hidden;
 }
 
-/* Buttons */
 .stDownloadButton > button {
     background: linear-gradient(135deg, #f59e0b, #d97706) !important;
     color: #000 !important;
@@ -130,7 +126,6 @@ div[data-testid="stDataFrame"] {
     border-color: #3d5a80 !important;
 }
 
-/* Section headings */
 h1 {
     color: #f1f5f9 !important;
     letter-spacing: -0.5px;
@@ -140,12 +135,10 @@ h2, h3 {
     color: #e2e8f0 !important;
 }
 
-/* Alerts */
 .stAlert {
     border-radius: 12px !important;
 }
 
-/* Text area */
 .stTextArea textarea {
     background-color: #111827 !important;
     border: 1px solid #1e3a5f !important;
@@ -155,7 +148,6 @@ h2, h3 {
     line-height: 1.7 !important;
 }
 
-/* Selectbox / dropdowns */
 .stSelectbox > div > div {
     background-color: #111827 !important;
     border: 1px solid #1e3a5f !important;
@@ -163,7 +155,6 @@ h2, h3 {
     color: #e2e8f0 !important;
 }
 
-/* Info box */
 .info-box {
     background: linear-gradient(135deg, #0f2137, #132a45);
     border: 1px solid #1e3a5f;
@@ -176,7 +167,6 @@ h2, h3 {
     line-height: 1.6;
 }
 
-/* Badge */
 .badge {
     display: inline-block;
     background: #1a2e45;
@@ -195,7 +185,6 @@ h2, h3 {
     color: #f59e0b;
 }
 
-/* Divider */
 hr {
     border: none;
     border-top: 1px solid #1e2d40 !important;
@@ -206,7 +195,7 @@ hr {
     unsafe_allow_html=True,
 )
 
-# Cached pipeline
+
 @st.cache_data(show_spinner=False)
 def run_pipeline(actual_df: pd.DataFrame, budget_df: pd.DataFrame):
     """
@@ -223,7 +212,6 @@ def run_pipeline(actual_df: pd.DataFrame, budget_df: pd.DataFrame):
     return variance_df, dept_df, trends_df, anomaly_summary, risk_flags
 
 
-# Header
 st.markdown(
     """
 <div style="padding: 8px 0 20px 0;">
@@ -245,7 +233,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Sidebar
 with st.sidebar:
     st.markdown(
         """
@@ -275,7 +262,6 @@ if actual_file and budget_file:
     st.session_state["budget_df"] = pd.read_csv(budget_file)
     st.sidebar.success("✅ Files uploaded!")
 
-# Period selector
 if "actual_df" in st.session_state:
     with st.sidebar:
         st.divider()
@@ -324,7 +310,6 @@ with st.sidebar:
     st.divider()
     run_btn = st.button("▶ Run Analysis", type="primary", use_container_width=True)
 
-# Main analysis
 if run_btn:
     if "actual_df" not in st.session_state:
         st.warning("⚠️ Please upload data or load sample data first.")
@@ -343,7 +328,6 @@ if run_btn:
             actual_df, budget_df
         )
 
-    # Period banner
     period_label = selected_period if selected_period != "All Periods" else "Full Dataset"
     contamination_pct = anomaly_summary.get("contamination_used", 10.0)
 
@@ -359,7 +343,6 @@ if run_btn:
         unsafe_allow_html=True,
     )
 
-    # KPI cards
     total_actual = variance_df["actual_amount"].sum()
     total_budget = variance_df["budget_amount"].sum()
     total_var = total_actual - total_budget
@@ -373,7 +356,6 @@ if run_btn:
 
     st.divider()
 
-    # Department summary and risk flags
     col_left, col_right = st.columns([1.1, 0.9])
 
     with col_left:
@@ -402,7 +384,6 @@ if run_btn:
 
     st.divider()
 
-    # Waterfall chart
     st.markdown("### 📉 Variance Waterfall - Top 10 Line Items")
     top10 = variance_df.head(10).copy()
     colors = ["#ef4444" if v < 0 else "#22c55e" for v in top10["variance_dollar"]]
@@ -435,20 +416,11 @@ if run_btn:
 
     st.divider()
 
-    # Trend chart
     st.markdown("### 📈 Rolling 3-Month Trend by Department")
     if not trends_df.empty:
         palette = [
-            "#f59e0b",
-            "#3b82f6",
-            "#22c55e",
-            "#a855f7",
-            "#ec4899",
-            "#14b8a6",
-            "#f97316",
-            "#64748b",
-            "#06b6d4",
-            "#84cc16",
+            "#f59e0b", "#3b82f6", "#22c55e", "#a855f7", "#ec4899",
+            "#14b8a6", "#f97316", "#64748b", "#06b6d4", "#84cc16",
         ]
 
         fig_trend = go.Figure()
@@ -486,7 +458,6 @@ if run_btn:
 
     st.divider()
 
-    # Anomalies
     st.markdown("### 🔍 AI-Detected Anomalies")
     anomaly_df = variance_df[variance_df["is_anomaly"] == True].copy()
 
@@ -527,57 +498,63 @@ if run_btn:
 
     st.divider()
 
-    # AI commentary
     st.markdown("### 🤖 AI-Generated Management Commentary")
     with st.spinner("✍️ Generating board-ready commentary..."):
         commentary = generate_commentary(variance_df, anomaly_summary, dept_df)
 
-    safe_commentary = commentary.replace("$", "&#36;")
-    st.markdown(
-        f"""
-    <div style="background: linear-gradient(135deg, #0f1825, #111d2e);
-        border: 1px solid #1e3a5f; border-left: 4px solid #f59e0b;
-        border-radius: 14px; padding: 24px; line-height: 1.9;
-        color: #cbd5e1; font-size: 0.95rem; white-space: pre-wrap;">
-{safe_commentary}
-    </div>
-    """,
-        unsafe_allow_html=True,
+    st.text_area(
+        "Management Commentary",
+        value=commentary,
+        height=320,
+        key="commentary_text",
+        label_visibility="collapsed",
     )
 
-    # Copy button
     commentary_json = json.dumps(commentary)
     components.html(
         f"""
-    <button onclick="
-        navigator.clipboard.writeText({commentary_json}).then(() => {{
-            this.innerHTML = '✅ Copied to clipboard!';
-            this.style.background = 'linear-gradient(135deg, #16a34a, #15803d)';
-            setTimeout(() => {{
-                this.innerHTML = '📋 Copy Commentary';
-                this.style.background = 'linear-gradient(135deg, #1a2e45, #1e3a5f)';
-            }}, 2500);
-        }});
-    " style="
-        background: linear-gradient(135deg, #1a2e45, #1e3a5f);
-        color: #e2e8f0;
-        border: 1px solid #2d4a6e;
-        border-radius: 10px;
-        padding: 10px 20px;
-        font-size: 0.88rem;
-        font-weight: 600;
-        cursor: pointer;
-        letter-spacing: 0.03em;
-    ">
-        📋 Copy Commentary
-    </button>
-    """,
-        height=55,
+        <div style="margin-top: 6px;">
+            <button
+                id="copy-btn"
+                style="
+                    background: linear-gradient(135deg, #1a2e45, #1e3a5f);
+                    color: #e2e8f0;
+                    border: 1px solid #2d4a6e;
+                    border-radius: 10px;
+                    padding: 10px 20px;
+                    font-size: 0.88rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    letter-spacing: 0.03em;
+                ">
+                📋 Copy Commentary
+            </button>
+        </div>
+
+        <script>
+            const btn = document.getElementById("copy-btn");
+            const textToCopy = {commentary_json};
+
+            btn.addEventListener("click", async function () {{
+                try {{
+                    await navigator.clipboard.writeText(textToCopy);
+                    btn.innerHTML = "✅ Copied to clipboard!";
+                    btn.style.background = "linear-gradient(135deg, #16a34a, #15803d)";
+                    setTimeout(() => {{
+                        btn.innerHTML = "📋 Copy Commentary";
+                        btn.style.background = "linear-gradient(135deg, #1a2e45, #1e3a5f)";
+                    }}, 2500);
+                }} catch (err) {{
+                    btn.innerHTML = "❌ Copy failed";
+                }}
+            }});
+        </script>
+        """,
+        height=60,
     )
 
     st.divider()
 
-    # Excel export
     st.markdown("### 📥 Export Report")
     excel_path = os.path.join(BASE_DIR, "outputs", "variance_report.xlsx")
     os.makedirs(os.path.join(BASE_DIR, "outputs"), exist_ok=True)
