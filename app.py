@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(BASE_DIR, 'src'))
 
@@ -32,7 +33,6 @@ html, body, [class*="css"] {
 [data-testid="stSidebar"] label {
     color: #e2e8f0 !important;
 }
-
 /* ── Metric cards ── */
 [data-testid="metric-container"] {
     background: linear-gradient(135deg, #111827 0%, #1a2234 100%);
@@ -61,14 +61,12 @@ html, body, [class*="css"] {
     text-transform: uppercase;
     letter-spacing: 0.08em;
 }
-
 /* ── Dataframes ── */
 div[data-testid="stDataFrame"] {
     border: 1px solid #1e2d40;
     border-radius: 14px;
     overflow: hidden;
 }
-
 /* ── Buttons ── */
 .stDownloadButton > button {
     background: linear-gradient(135deg, #f59e0b, #d97706) !important;
@@ -109,14 +107,11 @@ div[data-testid="stDataFrame"] {
     background: #243048 !important;
     border-color: #3d5a80 !important;
 }
-
 /* ── Section headings ── */
 h1 { color: #f1f5f9 !important; letter-spacing: -0.5px; }
 h2, h3 { color: #e2e8f0 !important; }
-
 /* ── Alerts ── */
 .stAlert { border-radius: 12px !important; }
-
 /* ── Text area ── */
 .stTextArea textarea {
     background-color: #111827 !important;
@@ -126,7 +121,6 @@ h2, h3 { color: #e2e8f0 !important; }
     font-size: 0.95rem !important;
     line-height: 1.7 !important;
 }
-
 /* ── Selectbox / dropdowns ── */
 .stSelectbox > div > div {
     background-color: #111827 !important;
@@ -134,7 +128,6 @@ h2, h3 { color: #e2e8f0 !important; }
     border-radius: 10px !important;
     color: #e2e8f0 !important;
 }
-
 /* ── Info box ── */
 .info-box {
     background: linear-gradient(135deg, #0f2137, #132a45);
@@ -147,16 +140,6 @@ h2, h3 { color: #e2e8f0 !important; }
     font-size: 0.88rem;
     line-height: 1.6;
 }
-
-/* ── Section card ── */
-.section-card {
-    background: linear-gradient(135deg, #0f1825, #111d2e);
-    border: 1px solid #1e2d40;
-    border-radius: 18px;
-    padding: 24px;
-    margin: 12px 0;
-}
-
 /* ── Badge ── */
 .badge {
     display: inline-block;
@@ -174,7 +157,6 @@ h2, h3 { color: #e2e8f0 !important; }
     border-color: rgba(245,158,11,0.3);
     color: #f59e0b;
 }
-
 /* ── Divider ── */
 hr {
     border: none;
@@ -183,6 +165,22 @@ hr {
 }
 </style>
 """, unsafe_allow_html=True)
+
+# ── CACHED PIPELINE ────────────────────────────────────────────────────────────
+@st.cache_data(show_spinner=False)
+def run_pipeline(actual_df: pd.DataFrame, budget_df: pd.DataFrame):
+    """
+    Run the full analysis pipeline and cache results by dataframe content.
+    Re-runs only when the underlying data changes — not on every page interaction.
+    """
+    load_csv_to_db(actual_df, budget_df)
+    variance_df   = get_variance_analysis()
+    dept_df       = get_department_summary()
+    trends_df     = get_rolling_trends()
+    variance_df   = detect_anomalies(variance_df)
+    anomaly_summary = get_anomaly_summary(variance_df)
+    risk_flags    = generate_risk_flags(variance_df)
+    return variance_df, dept_df, trends_df, anomaly_summary, risk_flags
 
 # ── HEADER ─────────────────────────────────────────────────────────────────────
 st.markdown("""
@@ -212,7 +210,6 @@ with st.sidebar:
             text-transform:uppercase; letter-spacing:0.1em;">Data Input</p>
     </div>
     """, unsafe_allow_html=True)
-
     use_sample = st.button("⚡ Load Sample Data", use_container_width=True)
     st.divider()
     actual_file = st.file_uploader("Upload Actuals CSV", type=["csv"])
@@ -246,7 +243,7 @@ if "actual_df" in st.session_state:
         selected_period = st.selectbox(
             "Select period",
             options=period_options,
-            index=len(period_options) - 1,   # default to latest period
+            index=len(period_options) - 1,
             label_visibility="collapsed"
         )
 
@@ -281,23 +278,19 @@ if run_btn:
     budget_df = st.session_state["budget_df"].copy()
     selected_period = st.session_state.get("selected_period", "All Periods")
 
-    # Filter to selected period if not "All Periods"
     if selected_period != "All Periods":
         actual_df = actual_df[actual_df["period"] == selected_period]
         budget_df = budget_df[budget_df["period"] == selected_period]
 
     with st.spinner("⚙️ Running analysis pipeline..."):
-        load_csv_to_db(actual_df, budget_df)
-        variance_df = get_variance_analysis()
-        dept_df = get_department_summary()
-        trends_df = get_rolling_trends()
-        variance_df = detect_anomalies(variance_df)
-        anomaly_summary = get_anomaly_summary(variance_df)
-        risk_flags = generate_risk_flags(variance_df)
+        variance_df, dept_df, trends_df, anomaly_summary, risk_flags = run_pipeline(
+            actual_df, budget_df
+        )
 
     # ── PERIOD BANNER ──────────────────────────────────────────────────────────
-    period_label = selected_period if selected_period != "All Periods" else "Full Dataset"
-    contamination_pct = anomaly_summary.get("contamination_used", 10.0)
+    period_label       = selected_period if selected_period != "All Periods" else "Full Dataset"
+    contamination_pct  = anomaly_summary.get("contamination_used", 10.0)
+
     st.markdown(f"""
     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; align-items:center;">
         <span class="badge badge-gold">📅 {period_label}</span>
@@ -308,15 +301,15 @@ if run_btn:
     """, unsafe_allow_html=True)
 
     # ── KPI CARDS ──────────────────────────────────────────────────────────────
-    total_actual = variance_df["actual_amount"].sum()
-    total_budget = variance_df["budget_amount"].sum()
-    total_var = total_actual - total_budget
+    total_actual  = variance_df["actual_amount"].sum()
+    total_budget  = variance_df["budget_amount"].sum()
+    total_var     = total_actual - total_budget
     total_var_pct = (total_var / total_budget * 100) if total_budget != 0 else 0
 
     k1, k2, k3, k4 = st.columns(4)
-    k1.metric("💰 Total Actual", f"${total_actual:,.0f}")
-    k2.metric("📋 Total Budget", f"${total_budget:,.0f}")
-    k3.metric("📊 Net Variance", f"${total_var:,.0f}", delta=f"{total_var_pct:+.2f}%")
+    k1.metric("💰 Total Actual",    f"${total_actual:,.0f}")
+    k2.metric("📋 Total Budget",    f"${total_budget:,.0f}")
+    k3.metric("📊 Net Variance",    f"${total_var:,.0f}", delta=f"{total_var_pct:+.2f}%")
     k4.metric("🔍 Anomalies Detected", anomaly_summary.get("total_anomalies", 0))
 
     st.divider()
@@ -328,10 +321,10 @@ if run_btn:
         st.markdown("### 🏢 Department Summary")
         dept_display = dept_df.copy()
         dept_display.columns = ["Department", "Actual ($)", "Budget ($)", "Variance ($)", "Variance %"]
-        dept_display["Actual ($)"] = dept_display["Actual ($)"].apply(lambda x: f"${x:,.0f}")
-        dept_display["Budget ($)"] = dept_display["Budget ($)"].apply(lambda x: f"${x:,.0f}")
+        dept_display["Actual ($)"]   = dept_display["Actual ($)"].apply(lambda x: f"${x:,.0f}")
+        dept_display["Budget ($)"]   = dept_display["Budget ($)"].apply(lambda x: f"${x:,.0f}")
         dept_display["Variance ($)"] = dept_display["Variance ($)"].apply(lambda x: f"${x:,.0f}")
-        dept_display["Variance %"] = dept_display["Variance %"].apply(lambda x: f"{x:+.2f}%")
+        dept_display["Variance %"]   = dept_display["Variance %"].apply(lambda x: f"{x:+.2f}%")
         st.dataframe(dept_display, use_container_width=True, hide_index=True)
 
     with col_right:
@@ -346,31 +339,23 @@ if run_btn:
 
     # ── WATERFALL CHART ────────────────────────────────────────────────────────
     st.markdown("### 📉 Variance Waterfall — Top 10 Line Items")
-    top10 = variance_df.head(10).copy()
+    top10  = variance_df.head(10).copy()
     colors = ["#ef4444" if v < 0 else "#22c55e" for v in top10["variance_dollar"]]
     fig_waterfall = go.Figure(go.Bar(
         x=top10["line_item"] + "<br><span style='font-size:10px'>(" + top10["period"] + ")</span>",
         y=top10["variance_dollar"],
-        marker=dict(
-            color=colors,
-            line=dict(color="rgba(255,255,255,0.05)", width=1)
-        ),
+        marker=dict(color=colors, line=dict(color="rgba(255,255,255,0.05)", width=1)),
         text=[f"${v:,.0f}" for v in top10["variance_dollar"]],
         textposition="outside",
         textfont=dict(color="#f1f5f9", size=11)
     ))
     fig_waterfall.update_layout(
-        xaxis_title="",
-        yaxis_title="Variance ($)",
-        height=420,
+        xaxis_title="", yaxis_title="Variance ($)", height=420,
         xaxis_tickangle=-30,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(10,14,26,0.6)",
-        font_color="#f1f5f9",
-        margin=dict(t=20, b=20),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(10,14,26,0.6)",
+        font_color="#f1f5f9", margin=dict(t=20, b=20),
         yaxis=dict(gridcolor="#1e2d40", zerolinecolor="#2d3f55"),
-        xaxis=dict(gridcolor="rgba(0,0,0,0)"),
-        bargap=0.35
+        xaxis=dict(gridcolor="rgba(0,0,0,0)"), bargap=0.35
     )
     st.plotly_chart(fig_waterfall, use_container_width=True)
 
@@ -379,29 +364,22 @@ if run_btn:
     # ── TREND CHART ────────────────────────────────────────────────────────────
     st.markdown("### 📈 Rolling 3-Month Trend by Department")
     if not trends_df.empty:
-        palette = ["#f59e0b", "#3b82f6", "#22c55e", "#a855f7",
-                   "#ec4899", "#14b8a6", "#f97316", "#64748b", "#06b6d4", "#84cc16"]
+        palette = ["#f59e0b","#3b82f6","#22c55e","#a855f7",
+                   "#ec4899","#14b8a6","#f97316","#64748b","#06b6d4","#84cc16"]
         fig_trend = go.Figure()
-        depts = trends_df["department"].unique()
-        for i, dept in enumerate(depts):
-            dept_data = trends_df[trends_df["department"] == dept]
+        for i, dept in enumerate(trends_df["department"].unique()):
+            d = trends_df[trends_df["department"] == dept]
             fig_trend.add_trace(go.Scatter(
-                x=dept_data["period"],
-                y=dept_data["rolling_3m_avg"],
-                mode="lines+markers",
-                name=dept,
+                x=d["period"], y=d["rolling_3m_avg"],
+                mode="lines+markers", name=dept,
                 line=dict(color=palette[i % len(palette)], width=2),
                 marker=dict(size=5)
             ))
         fig_trend.update_layout(
-            xaxis_title="Period",
-            yaxis_title="Rolling 3M Avg ($)",
-            height=420,
+            xaxis_title="Period", yaxis_title="Rolling 3M Avg ($)", height=420,
             legend_title="Department",
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(10,14,26,0.6)",
-            font_color="#f1f5f9",
-            margin=dict(t=20, b=20),
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(10,14,26,0.6)",
+            font_color="#f1f5f9", margin=dict(t=20, b=20),
             yaxis=dict(gridcolor="#1e2d40", zerolinecolor="#2d3f55"),
             xaxis=dict(gridcolor="#1e2d40"),
             legend=dict(bgcolor="rgba(15,24,37,0.8)", bordercolor="#1e2d40", borderwidth=1)
@@ -418,18 +396,15 @@ if run_btn:
         st.markdown(f"""
         <div class="info-box">
             <strong style="color:#f59e0b;">{len(anomaly_df)}</strong> anomalies detected across
-            <strong style="color:#f59e0b;">{anomaly_summary.get('total_anomalies', 0)}</strong> line items
-            in <strong style="color:#f59e0b;">{len(anomaly_summary.get('departments_affected', []))}</strong> departments
+            <strong style="color:#f59e0b;">{len(anomaly_summary.get('departments_affected', []))}</strong> departments
             — sensitivity set to <strong style="color:#f59e0b;">{contamination_pct:.0f}%</strong> for this dataset size.
         </div>
         """, unsafe_allow_html=True)
-
         display_cols = ["department", "line_item", "period",
                         "actual_amount", "budget_amount", "variance_dollar", "variance_pct"]
         st.dataframe(
             anomaly_df[display_cols].head(500),
-            use_container_width=True,
-            hide_index=True
+            use_container_width=True, hide_index=True
         )
         if len(anomaly_df) > 500:
             st.caption(f"Showing top 500 of {len(anomaly_df)} anomalies. Download the Excel report for the full list.")
@@ -443,6 +418,7 @@ if run_btn:
     with st.spinner("✍️ Generating board-ready commentary..."):
         commentary = generate_commentary(variance_df, anomaly_summary, dept_df)
 
+    # Escape $ so Streamlit doesn't treat them as LaTeX delimiters
     safe_commentary = commentary.replace('$', '&#36;')
     st.markdown(f"""
     <div style="background: linear-gradient(135deg, #0f1825, #111d2e);
@@ -450,6 +426,36 @@ if run_btn:
         border-radius: 14px; padding: 24px; line-height: 1.9;
         color: #cbd5e1; font-size: 0.95rem; white-space: pre-wrap;">
 {safe_commentary}
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── COPY BUTTON ────────────────────────────────────────────────────────────
+    commentary_json = json.dumps(commentary)   # safely escapes all quotes and special chars
+    st.markdown(f"""
+    <div style="margin-top: 12px;">
+        <button id="copy-btn" onclick="
+            navigator.clipboard.writeText({commentary_json}).then(() => {{
+                this.innerHTML = '✅ Copied to clipboard!';
+                this.style.background = 'linear-gradient(135deg, #16a34a, #15803d)';
+                setTimeout(() => {{
+                    this.innerHTML = '📋 Copy Commentary';
+                    this.style.background = 'linear-gradient(135deg, #1a2e45, #1e3a5f)';
+                }}, 2500);
+            }});
+        " style="
+            background: linear-gradient(135deg, #1a2e45, #1e3a5f);
+            color: #e2e8f0;
+            border: 1px solid #2d4a6e;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 0.03em;
+            transition: all 0.2s ease;
+        ">
+            📋 Copy Commentary
+        </button>
     </div>
     """, unsafe_allow_html=True)
 
