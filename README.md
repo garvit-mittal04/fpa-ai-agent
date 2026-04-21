@@ -1,213 +1,104 @@
 # 📊 FP&A AI Analyst Agent
-### AI-Powered Variance Analysis & Management Commentary System
 
-[![Live App](https://img.shields.io/badge/Live%20App-Streamlit-FF4B4B?style=for-the-badge&logo=streamlit)](https://fpa-ai-agent-garvit.streamlit.app)
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python)](https://python.org)
-[![SQL](https://img.shields.io/badge/SQL-SQLite-003B57?style=for-the-badge&logo=sqlite)](https://sqlite.org)
-[![ML](https://img.shields.io/badge/ML-IsolationForest-22c55e?style=for-the-badge)]
+An end-to-end financial analytics system that automates variance analysis, anomaly detection, and management commentary — transforming traditional FP&A workflows into real-time decision systems.
 
 ---
 
-## 🚀 Overview
-
-An AI-powered FP&A system that automates:
-
-- 📊 Variance Analysis  
-- 🔍 Anomaly Detection  
-- ⚠️ Risk Flagging  
-- 🤖 Management Commentary  
-- 📥 Excel Reports  
-
-Converts financial data into **board-ready insights in minutes**.
----
-
-## 💼 Impact
-
-- Reduced FP&A variance analysis time from hours to minutes  
-- Scaled anomaly detection across 10,000+ financial records  
-- Automated generation of executive-ready management commentary  
+## 🚀 Live Application
+https://fpa-ai-agent-garvit.streamlit.app  
 
 ---
 
-## 🧠 Problem
+## 📌 Project Overview
 
-FP&A workflows are:
-- Manual
-- Time-consuming
-- Inconsistent
+Most FP&A workflows today still rely on:
+- Manual Excel-based variance analysis  
+- Static reports with limited insight  
+- Time-consuming commentary writing  
 
-This project automates the entire pipeline.
+This project builds an AI-powered FP&A analyst that automates the full workflow:
 
----
-
-## ⚙️ System Flow
-
-| Step | Description |
-|------|------------|
-| 📥 Input | Upload Actuals & Budget CSV |
-| 🧮 SQL | Variance Analysis |
-| 📈 Trends | Rolling Analysis |
-| 🔍 ML | Anomaly Detection |
-| ⚠️ Risk | Flags |
-| 🤖 AI | Commentary |
-| 📤 Output | Excel + Dashboard |
+Data → Variance → Anomalies → Risks → Commentary → Report
 
 ---
 
-## 🖥️ Live App
+## ⚙️ Core Features
 
-https://fpa-ai-agent-garvit.streamlit.app
+### Variance Engine
+- SQL-based Actual vs Budget comparison  
+- FULL OUTER JOIN logic (no data loss)  
+- Department & line-item analysis  
 
----
+### Anomaly Detection
+- Isolation Forest (ML)  
+- Adaptive sensitivity  
+- No false positives on stable datasets  
 
-## 🧠 Key Features
+### Risk Flags
+- Highlights high-impact deviations  
 
-### 🔍 Adaptive Anomaly Detection
-- Detects stable datasets
-- Avoids false positives
-- Uses ML only when needed
+### AI Commentary
+- Board-ready financial insights  
+- Focused, structured, non-generic  
 
-### 🧮 SQL Engine
-- CTE-based queries
-- FULL OUTER JOIN logic (via UNION)
-- No data loss
+### Dashboard
+- KPI cards  
+- Department table  
+- Waterfall chart  
+- Trend analysis  
+- Anomaly table  
 
-### 🤖 AI Commentary
-- Executive-level insights
-- Risk & driver explanation
-- Fallback safe mode
-
-### 📊 Dashboard
-- KPI Cards
-- Waterfall Chart
-- Trends
-- Anomaly View
-
-### 📥 Excel Export
-- Executive Summary
-- Variance Detail
-- AI Commentary
+### Export
+- Excel report with summary + details + commentary  
 
 ---
 
-## 🗄️ Core SQL Logic
+## 📈 Impact
 
-```sql
-WITH actuals AS (
-    SELECT department, line_item, period, SUM(amount) AS actual_amount
-    FROM financial_data
-    WHERE data_type = 'actual'
-    GROUP BY department, line_item, period
-),
-budget AS (
-    SELECT department, line_item, period, SUM(amount) AS budget_amount
-    FROM financial_data
-    WHERE data_type = 'budget'
-    GROUP BY department, line_item, period
-),
-all_keys AS (
-    SELECT department, line_item, period FROM actuals
-    UNION
-    SELECT department, line_item, period FROM budget
-)
-SELECT
-    k.department,
-    k.line_item,
-    k.period,
-    COALESCE(a.actual_amount, 0) AS actual_amount,
-    COALESCE(b.budget_amount, 0) AS budget_amount,
-    COALESCE(a.actual_amount, 0) - COALESCE(b.budget_amount, 0) AS variance_dollar
-FROM all_keys k
-LEFT JOIN actuals a
-    ON k.department = a.department
-   AND k.line_item = a.line_item
-   AND k.period = a.period
-LEFT JOIN budget b
-    ON k.department = b.department
-   AND k.line_item = b.line_item
-   AND k.period = b.period
-ORDER BY ABS(variance_dollar) DESC;
-```
+- Hours → Minutes (analysis time)  
+- 10,000+ records handled  
+- Automated reporting  
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer | Tool |
-|------|------|
-| Data | Pandas |
-| DB | SQLite |
-| ML | Scikit-learn |
-| AI | Groq API |
-| Viz | Plotly |
-| UI | Streamlit |
+Python, SQL, Streamlit, Scikit-learn, Plotly, OpenPyXL, LLMs
 
 ---
 
-## 📁 Project Structure
+## 🏗️ Architecture
 
-```
-fpa-ai-agent/
-│
-├── app.py
-├── src/
-│   ├── sql_engine.py
-│   ├── anomaly_detector.py
-│   ├── commentary_agent.py
-│   └── report_generator.py
-│
-├── database/
-├── sample_data/
-├── outputs/
-├── requirements.txt
-└── .env
-```
+CSV → SQL → ML → Risk → AI → Dashboard
 
 ---
 
-## ⚙️ Run Locally
+## ▶️ Run Locally
 
-### 1. Clone
 ```bash
 git clone https://github.com/garvit-mittal04/fpa-ai-agent.git
 cd fpa-ai-agent
-```
-
-### 2. Install
-```bash
 pip install -r requirements.txt
-```
-
-### 3. Setup .env
-```
-GROQ_API_KEY=your_key_here
-```
-
-### 4. Run
-```bash
 streamlit run app.py
 ```
 
 ---
 
-## 💼 Business Impact
+## 📂 Structure
 
-| Metric | Manual | System |
-|--------|--------|--------|
-| Time | Hours | Minutes |
-| Accuracy | Variable | Consistent |
-| Insight | Manual | Automated |
-
----
-
-## 👤 Author
-
-Garvit Mittal  
-MS Business Analytics & AI — UT Dallas  
-
-LinkedIn: https://linkedin.com/in/garvit-mittal04  
-GitHub: https://github.com/garvit-mittal04  
+```
+app.py
+src/
+  sql_engine.py
+  anomaly_detector.py
+  commentary_agent.py
+  report_generator.py
+sample_data/
+outputs/
+```
 
 ---
 
-⭐ If you found this useful, consider starring the repo!
+## 🤝 Feedback
+
+Open to feedback from FP&A, finance, and analytics professionals.
