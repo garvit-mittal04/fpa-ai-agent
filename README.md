@@ -75,7 +75,7 @@ The goal of this system is to make FP&A reporting:
 
 ## ✨ Visual Highlights
 
-Even without static screenshots, the application includes the following interface components:
+The application includes the following interface components:
 
 - **KPI Cards** for Total Actual, Total Budget, Net Variance, and Anomalies
 - **System Insight Banner** showing whether the dataset is stable or requires investigation
