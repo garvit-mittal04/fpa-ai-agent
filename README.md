@@ -12,7 +12,9 @@
 
 ## 🚀 Live Application
 
-🔗 **Demo:** https://fpa-ai-agent-garvit.streamlit.app  
+🔗 **Demo:** https://fpa-ai-agent-garvit.streamlit.app
+<img width="1506" height="847" alt="Screenshot 2026-05-12 at 11 49 07 AM" src="https://github.com/user-attachments/assets/47e9739a-9d87-4bc4-b40c-7cd8bc5aa0b5" />
+
 
 ---
 
